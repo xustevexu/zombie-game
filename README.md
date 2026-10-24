@@ -7,6 +7,22 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v6.9 — the town of Harlow (Oct 23, 2026)
+- **Harlow**: follow the road north past the ruins to a walled fort block (10 houses per side, a gate, an eye-slot). Gus lives behind the gate.
+- **Entry quest (weed tutorial)**: Gus's key → hardware-store basement (pot + soil) → dispensary planter (seeds) → plant in the shack by the gate → harvest → package at the bench → bring Gus 5 baggies.
+- **Rent**: you get a room in Gus's house for 5 baggies a week. Miss it and you're locked out (pay 10 to get back in) and left hunting. You can also buy the house for sale ($400).
+- **Customers (like Schedule 1)**: 12 named townspeople. Give one a free sample and they're signed up. After that they come to you and buy. The journal (J) lists them.
+- **Town life**: Mayor Ruth's warning, a town reputation score, and Hank the butcher (sells food and arrows, buys meat). Kill a townsperson and the whole town turns on you. There are no police.
+- **Bow and arrows** (slot 7, quiet), plus crafting for planters, buckets, a shovel, dirt, and compost → good soil (bigger harvests).
+- **Roaming hordes** of 50–100 zombies. Harlow goes dark and silent while one passes.
+- **Quality of life**:
+  - Crouch (Left Ctrl held, Z toggle, CROUCH button on phones; synced in co-op).
+  - Captions stay on screen longer the longer they are. Click or press Q to dismiss them, and read old ones in the journal log.
+  - Pinned objective.
+  - The camera stays under the tent canvas, and the bedroll is now inside the tent.
+  - The Harlow sign arrow points north.
+  - The game autosaves every 60 s and on Quit, and the title screen has **Continue saved game**.
+
 ## v6.5 graphics overhaul (Oct 23, 2026)
 Realistic "7 Days to Die"-style look on Medium and High; Low is unchanged and stays light for phones. Gameplay, colliders and co-op are unchanged.
 
@@ -103,12 +119,16 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Jump | Space | JUMP |
 | Swing / chop | LMB (hold) | HIT |
 | Interact (scavenge, board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
-| Steel axe (near a workbench) | G | AXE |
+| Crouch (quieter, slower; zombies notice you at half range) | Left Ctrl (hold) or Z (toggle) | CROUCH |
+| Craft menu (planter, bucket, shovel, bow, arrows, dig dirt, compost); steel axe near a workbench | G | CRAFT |
+| Bow (quiet; needs arrows) | 7, LMB | slot 7, HIT |
+| Talk to townspeople, knock at the Harlow gate, grow (pots), package (bench) | E (1-9 pick a dialogue option) | ACT |
+| Journal (objective, quest, customers, grow slots, caption log); dismiss newest caption | J; Q or click | JOURNAL; tap caption |
 | Eat / bandage | F / H | EAT / HEAL |
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
 | Character screen | C | STATS |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
-| Pause (solo freezes time; co-op does not) | Esc | Pause |
+| Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
 
 ### v4 changes
 **Collision bug (walking through the leaning slab).** Root cause: the slab prop had a collider for its *upright* footprint only, so the tilted
