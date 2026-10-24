@@ -447,7 +447,34 @@ function buildOutskirts(W, addBuilding2, seed, tw) {
     const x0 = cx - hw / 2, x1 = cx + hw / 2, z0 = cz - hd / 2, z1 = cz + hd / 2;
     if (!free(x0 - 1, x1 + 1, z0 - 1, z1 + 1, 0.3)) return;
     const h = { x0, x1, z0, z1, cx, cz, face, two, H: two ? 5.6 : 3.2, roof: pick(["gable", "gable", "hip", "flat"]), col: pick(STY), brick: r() < 0.3, porch: r() < 0.6, hue: r(), broken: Math.floor(r() * 4), gar: null };
-    solid(x0, x1, z0, z1, h.H, "home");
+    {
+      const t = 0.2, dw = 0.65;
+      h.walls = [];
+      const wb = (a, b, c, e) => {
+        h.walls.push([a, b, c, e]);
+        solid(a, b, c, e, h.H, "hwall");
+      };
+      if (along2) {
+        const fzv = face[1] > 0 ? z1 - t : z0, bzv = face[1] > 0 ? z0 : z1 - t;
+        wb(x0, x1, bzv, bzv + t);
+        wb(x0, x0 + t, z0, z1);
+        wb(x1 - t, x1, z0, z1);
+        wb(x0, cx - dw, fzv, fzv + t);
+        wb(cx + dw, x1, fzv, fzv + t);
+      } else {
+        const fxv = face[0] > 0 ? x1 - t : x0, bxv = face[0] > 0 ? x0 : x1 - t;
+        wb(bxv, bxv + t, z0, z1);
+        wb(x0, x1, z0, z0 + t);
+        wb(x0, x1, z1 - t, z1);
+        wb(fxv, fxv + t, z0, cz - dw);
+        wb(fxv, fxv + t, cz + dw, z1);
+      }
+      const D = hd, fwid = hw, P = (u, v) => along2 ? [cx + u, (face[1] > 0 ? z1 : z0) - face[1] * v] : [(face[0] > 0 ? x1 : x0) - face[0] * v, cz + u];
+      for (const [kind, u, lat, dep, ht] of [["cupboard", -fwid * 0.25, 1.4, 0.6, 0.9], ["closet", 0, 1.2, 0.6, 2], ["fridge", fwid * 0.3, 0.8, 0.7, 1.8]]) {
+        const [x, z] = P(u, D - t - dep / 2 - 0.02), hx = along2 ? lat / 2 : dep / 2, hz = along2 ? dep / 2 : lat / 2;
+        W.loot.push({ kind, x, z, s: 1, rot: 0, fd: face, reach: 2.2, hx, hz, h: ht, boxes: [[x - hx, x + hx, z - hz, z + hz, ht]] });
+      }
+    }
     if (gar) {
       const gw = gar === 1 ? 3.6 : 6.2, gd = 6, side = r() < 0.5 ? -1 : 1, gap = att ? 0 : 1.6;
       let g;
@@ -473,8 +500,9 @@ function buildOutskirts(W, addBuilding2, seed, tw) {
     if (r() < 0.75) {
       const tx = cx + (along2 ? (r() < 0.5 ? -1 : 1) * (hw / 2 + 2.2) : face[0] * (hd / 2 + 2)), tz = cz + (along2 ? face[1] * (hd / 2 + 2) : (r() < 0.5 ? -1 : 1) * (hw / 2 + 2.2));
       if (free(tx - 0.4, tx + 0.4, tz - 0.4, tz + 0.4, 0.2)) {
-        nb.trees.push({ x: tx, z: tz, s: R2(0.8, 1.3), k: r() < 0.5 ? 0 : 1 });
-        solid(tx - 0.3, tx + 0.3, tz - 0.3, tz + 0.3, 99, "ytree");
+        const ts = R2(0.8, 1.3);
+        r();
+        if (!W.loot.some((n) => Math.abs(n.x - tx) < 3 && Math.abs(n.z - tz) < 3)) W.loot.push({ kind: "tree", x: tx, z: tz, s: 0.75 + ts * 0.45, rot: tx * 1.7, reach: 2.7, cr: 0.5 });
       }
     }
     if (r() < 0.45) nb.fences.push({ ax: fx + face[0] * 2.6 - (along2 ? hw / 2 : 0) * 1, az: fz + face[1] * 2.6 - (along2 ? 0 : hw / 2), along: along2, len: hw, broken: r() });
@@ -494,8 +522,11 @@ function buildOutskirts(W, addBuilding2, seed, tw) {
     let clash = false;
     for (const w of W.props) if (cx - hx < w.x1 && cx + hx > w.x0 && cz - hz < w.z1 && cz + hz > w.z0) clash = true;
     if (clash) continue;
-    nb.cars.push({ x: cx, z: cz, yaw: (ax ? Math.PI / 2 : 0) + R2(-0.25, 0.25), hue: r() });
-    solid(cx - hx, cx + hx, cz - hz, cz + hz, 1.5, "ncar");
+    {
+      R2(-0.25, 0.25);
+      const hue = r(), rot90 = !ax;
+      if (!W.loot.some((n) => Math.abs(n.x - cx) < (n.hx || 1) + hx + 0.6 && Math.abs(n.z - cz) < (n.hz || 1) + hz + 0.6) && !W.buildings.some((b) => cx - hx < b.x1 + 1 && cx + hx > b.x0 - 1 && cz - hz < b.z1 + 1 && cz + hz > b.z0 - 1)) W.loot.push({ kind: "car", x: cx, z: cz, s: 1, rot: rot90 ? Math.PI / 2 : 0, hue, reach: 3.8, hx: rot90 ? 1 : 2.3, hz: rot90 ? 2.3 : 1, v: carVariant(hue), boxes: carBoxes(cx, cz, rot90, hue, carVariant(hue)), town: 1 });
+    }
   }
   const X = [[0, -104], [0, -140], [-52, -104], [52, -104], [-52, -140], [52, -140]];
   for (const [x, z] of X) {
@@ -504,7 +535,52 @@ function buildOutskirts(W, addBuilding2, seed, tw) {
     nb.signs.push({ x: sx, z: sz, a: a[0], b: a[1] || "", tilt: R2(-0.12, 0.12) });
     solid(sx - 0.08, sx + 0.08, sz - 0.08, sz + 0.08, 2.8, "sign");
   }
+  townLoot(W, seed);
   return nb;
+}
+function townLoot(W, seed) {
+  const r = mulberry32((seed | 0) ^ 65653), R2 = (a, b) => a + (b - a) * r();
+  const clear = (x0, x1, z0, z1, pad = 0.5) => {
+    for (const w of W.walls) if (x0 - pad < w.x1 && x1 + pad > w.x0 && z0 - pad < w.z1 && z1 + pad > w.z0) return false;
+    for (const w of W.props) if (x0 - pad < w.x1 && x1 + pad > w.x0 && z0 - pad < w.z1 && z1 + pad > w.z0) return false;
+    for (const b of W.buildings) if (x0 - pad < b.x1 + 0.6 && x1 + pad > b.x0 - 0.6 && z0 - pad < b.z1 + 0.6 && z1 + pad > b.z0 - 0.6) return false;
+    for (const h of W.nb.homes) if (x0 - pad < h.x1 && x1 + pad > h.x0 && z0 - pad < h.z1 && z1 + pad > h.z0) return false;
+    for (const n of W.loot) {
+      const ex = n.hx || n.cr || 0.5, ez = n.hz || n.cr || 0.5;
+      if (x0 - pad < n.x + ex && x1 + pad > n.x - ex && z0 - pad < n.z + ez && z1 + pad > n.z - ez) return false;
+    }
+    return true;
+  };
+  const inFortR = (x, z) => x > -36 && x < 36 && z > -252 && z < -158;
+  const add = (kind, x, z, hx, hz, h, extra) => {
+    if (inFortR(x, z) || !clear(x - hx, x + hx, z - hz, z + hz)) return false;
+    W.loot.push({ kind, x, z, s: 1, rot: 0, reach: 2.4, hx, hz, h, boxes: [[x - hx, x + hx, z - hz, z + hz, h]], ...extra });
+    return true;
+  };
+  for (const s of STREETS) {
+    if (s[0] === "Old Mill Rd") continue;
+    const ax = s[2] === s[4], L = Math.hypot(s[3] - s[1], s[4] - s[2]);
+    for (let k = 0; k < Math.floor(L / 22); k++) {
+      const u = R2(0.05, 0.95), side = r() < 0.5 ? -1 : 1, off = side * R2(3.8, 4.4), x = s[1] + (s[3] - s[1]) * u + (ax ? 0 : off), z = s[2] + (s[4] - s[2]) * u + (ax ? off : 0), q = r();
+      if (q < 0.35) add("crate", x, z, 0.5, 0.5, 0.78);
+      else if (q < 0.7) add("barrel", x, z, 0.42, 0.42, 1.05);
+      else add("dumpster", x, z, ax ? 1 : 0.65, ax ? 0.65 : 1, 1.3);
+    }
+  }
+  for (const h of W.nb.homes) if (h.gar) {
+    const G = h.gar, gx = (G.x0 + G.x1) / 2 + h.face[0] * ((G.x1 - G.x0) / 2 + 1.1), gz = (G.z0 + G.z1) / 2 + h.face[1] * ((G.z1 - G.z0) / 2 + 1.1);
+    add("crate", gx + (h.face[1] ? 1.9 : 0), gz + (h.face[0] ? 1.9 : 0), 0.5, 0.5, 0.78, { gar: 1 });
+  }
+  let nj = 0;
+  for (let z = -168; z > -244 && nj < 5; z -= 11) for (const sx of [-1, 1]) {
+    if (nj >= 5) break;
+    const x = sx * 32.6;
+    let ok = clear(x - 0.6, x + 0.6, z - 0.6, z + 0.6, 0.4);
+    if (ok) {
+      W.loot.push({ kind: "junk", x, z, s: 1, rot: z, reach: 2.3, cr: 0.6, h: 0.6, fort: 1 });
+      nj++;
+    }
+  }
 }
 function buildBasement(W, hw) {
   const xb = hw.x + 1.5, xa = hw.x - 4, zs0 = hw.z0 + 1.7, zs1 = hw.z0 + 2.9;
@@ -533,7 +609,7 @@ function buildBasement(W, hw) {
     { x0: B.shelf.x - 0.3, x1: B.room.x1, z0: B.shelf.z - 1, z1: B.shelf.z + 1 },
     // the shelf with the pot + soil
     { x0: B.room.x0, x1: B.room.x0 + 0.5, z0: B.room.z1 - 3, z1: B.room.z1 },
-    { x0: hw.x + 0.8, x1: hw.x + 2, z0: B.room.z1 - 1.4, z1: B.room.z1 - 0.6 }
+    { x0: hw.x + 0.8, x1: hw.x + 2, z0: B.room.z1 - 0.8, z1: B.room.z1 }
   ];
   return B;
 }
@@ -1250,7 +1326,6 @@ function addBuilding(W, p, w, d, R2, seed, opt = {}) {
   bl.slab = { x: bl.x1 + 1.2, z: bl.z + (PR() - 0.5) * bl.d * 0.5 };
   if (Math.abs(bl.slab.z - we.c) < 2.3) bl.slab.z = we.c + (we.c > bl.z ? -2.4 : 2.4);
   const nx = Math.abs(wn.c - (bl.x0 + 1.4)) > 1.6 ? bl.x0 + 1.4 : bl.x1 - 1.4;
-  W.props.push({ x0: bl.slab.x - 0.93, x1: bl.slab.x + 0.93, z0: bl.slab.z - 0.88, z1: bl.slab.z + 0.88, h: 2.2, what: "slab" });
   W.props.push({ x0: nx - 0.72, x1: nx + 0.72, z0: bl.z0 + T / 2, z1: bl.z0 + 0.7, h: 1.9, what: "shelf" });
   W.props.push({ x0: bl.x0 + 1.9 - 0.65, x1: bl.x0 + 1.9 + 0.65, z0: bl.z1 - 1.4 - 0.42, z1: bl.z1 - 1.4 + 0.42, h: 0.66, what: "table" });
   W.props.push({ x0: bl.x1 - 1.1 - 0.5, x1: bl.x1 - 1.1 + 0.5, z0: bl.z1 - 2.4 - 0.98, z1: bl.z1 - 2.4 + 0.98, h: 0.24, what: "mattress" });
@@ -1355,7 +1430,7 @@ function obstacles(W, S2, x, z, fn, reach = 0) {
       for (const b of n.boxes) fn(1, b[0], b[1], b[2], b[3], b[4]);
       continue;
     }
-    const h = n.kind === "crate" ? 0.78 : n.kind === "barrel" ? 1.05 : 1.75;
+    const h = n.h || (n.kind === "crate" ? 0.78 : n.kind === "barrel" ? 1.05 : 1.75);
     if (n.cr) fn(0, n.x, n.z, n.cr, 0, h);
     else fn(1, n.x - n.hx, n.x + n.hx, n.z - n.hz, n.z + n.hz, h);
   }
@@ -1377,6 +1452,15 @@ var BOX = { x0: 0, x1: 0, z0: 0, z1: 0 };
 function collide(W, S2, x, z, r, y = 0) {
   const p = { x, z }, top = y + CFG.STEP, B = W.bsm;
   if (B && isBelow(y)) {
+    const sw = B.sw, xu = B.xb - Math.max(0, (y + CFG.STEP) / BSM_FL) * (B.xb - B.xa);
+    const ex = [{ x0: B.xa, x1: B.xb + 0.15, z0: sw.z0 - 0.12, z1: sw.z0 }, { x0: B.xa, x1: B.xb + 0.15, z0: sw.z1, z1: sw.z1 + 0.12 }, { x0: xu, x1: B.xb + 0.3, z0: sw.z0, z1: sw.z1 }];
+    for (let it = 0; it < 2; it++) for (const b of ex) if (p.x > b.x0 - r && p.x < b.x1 + r && p.z > b.z0 - r && p.z < b.z1 + r) {
+      BOX.x0 = b.x0;
+      BOX.x1 = b.x1;
+      BOX.z0 = b.z0;
+      BOX.z1 = b.z1;
+      pushBox(p, BOX, r);
+    }
     for (let it = 0; it < 2; it++) for (const b of B.obs) if (p.x > b.x0 - r && p.x < b.x1 + r && p.z > b.z0 - r && p.z < b.z1 + r) {
       BOX.x0 = b.x0;
       BOX.x1 = b.x1;
@@ -1424,7 +1508,10 @@ function ceilingAt(W, S2, x, z, y = 0) {
 }
 function groundAt(W, S2, x, z, y) {
   const B = W.bsm;
-  if (B && inSW(B, x, z)) return rampY(B, x);
+  if (B && inSW(B, x, z)) {
+    const ry = rampY(B, x);
+    return isBelow(y) && ry > y + CFG.STEP + 0.05 ? BSM_FL : ry;
+  }
   if (B && isBelow(y) && inRoom(B, x, z, 0.5)) return BSM_FL;
   let g = 0;
   const top = y + CFG.STEP + 1e-3, m = 0.28;
@@ -1461,7 +1548,7 @@ function losBlocked(W, S2, ax, az, bx, bz) {
   }
   return false;
 }
-var NODE_LABEL = { tree: "Chop tree (wood)", crate: "Search crate", car: "Scavenge wreck", barrel: "Search barrel" };
+var NODE_LABEL = { tree: "Chop tree (wood)", crate: "Search crate", car: "Scavenge wreck", tcar: "Search trunk & glovebox", barrel: "Search barrel", cupboard: "Search cupboards", fridge: "Open fridge", closet: "Search closet", dumpster: "Search dumpster", junk: "Pick through junk pile" };
 function findInteract(W, S2, me) {
   const fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw);
   let best = null, bs = 1e9;
@@ -1481,7 +1568,7 @@ function findInteract(W, S2, me) {
     const n = W.loot[i];
     if (n.kind === "tree") continue;
     if (Math.abs(n.x - me.x) > 5 || Math.abs(n.z - me.z) > 5) continue;
-    consider("loot", i, n.x, n.z, n.reach, NODE_LABEL[n.kind], true);
+    consider("loot", i, n.x, n.z, n.reach, NODE_LABEL[n.town ? "tcar" : n.kind], true);
   }
   const wood = me.inv.wood;
   for (let i = 0; i < W.openings.length; i++) {
@@ -1678,7 +1765,7 @@ function canPlace(W, S2, p, type, tier, rot, px, pz) {
     probeObstacles(W, S2, cx, cz, probe);
     for (const q of S2.players.values()) if (q.alive) {
       const qx = Math.max(col.x0, Math.min(q.x, col.x1)), qz = Math.max(col.z0, Math.min(q.z, col.z1));
-      if (Math.hypot(q.x - qx, q.z - qz) < CFG.PLAYER_R + 0.05) {
+      if (Math.hypot(q.x - qx, q.z - qz) < (type === "pot" ? 0.28 : CFG.PLAYER_R + 0.05)) {
         res.why = "Someone is in the way";
         return res;
       }
@@ -2947,22 +3034,37 @@ function townUpdate(sim, dt) {
   }
   if (!tw.nextHorde) tw.nextHorde = S2.time + CFG.DAY_LEN * (1.5 + Math.random());
   if (!tw.horde && S2.time > tw.nextHorde) {
-    const a = Math.random() * Math.PI * 2, n = 50 + Math.floor(Math.random() * 51), sx = Math.cos(a) * 140, sz = -100 + Math.sin(a) * 140;
-    const L = Math.hypot(sx, sz + 100);
-    tw.horde = { x: sx, z: sz, dx: -sx / L, dz: -(sz + 100) / L, n, near: 0, t: 0 };
+    let a = 0, sx = 0, sz = 0;
+    for (let k = 0; k < 40; k++) {
+      a = Math.random() * Math.PI * 2;
+      sx = Math.cos(a) * 140;
+      sz = -100 + Math.sin(a) * 140;
+      if (sz > -150 && !inFort(sx, sz) && !buildingAt(W, sx, sz)) break;
+    }
+    const n = 50 + Math.floor(Math.random() * 51), wp = hordeRoute(sx, sz);
+    tw.horde = { x: sx, z: sz, dx: 0, dz: 0, n, near: 0, t: 0, wp };
     sim.toastAll(`A roaming horde of ~${n} is moving through the area. Harlow goes dark and silent. Keep quiet.`);
   }
   if (tw.horde) {
     const h = tw.horde;
     h.t += dt;
-    h.x += h.dx * 1.1 * dt;
-    h.z += h.dz * 1.1 * dt;
-    const loud = ps.find((p) => p.atk > 0 && Math.hypot(p.x - h.x, p.z - h.z) < 30 && !(p.hd === 7 && p.inv.bow > 0));
-    if (loud) {
-      const L = Math.hypot(loud.x - h.x, loud.z - h.z) || 1;
-      h.dx = (loud.x - h.x) / L;
-      h.dz = (loud.z - h.z) / L;
+    if (!h.wp) h.wp = hordeRoute(h.x, h.z);
+    const loud = ps.find((p) => p.atk > 0 && Math.hypot(p.x - h.x, p.z - h.z) < 30 && !(p.hd === 7 && p.inv.bow > 0) && !(inFort(p.x, p.z) && !(S2.tw.gopen > 0.7)));
+    const tg = loud ? { x: loud.x, z: loud.z } : h.wp[0];
+    if (tg) {
+      const L = Math.hypot(tg.x - h.x, tg.z - h.z) || 1;
+      h.dx = (tg.x - h.x) / L;
+      h.dz = (tg.z - h.z) / L;
+      if (!loud && L < 3) h.wp.shift();
     }
+    {
+      const nx = h.x + h.dx * 1.1 * dt, nz = h.z + h.dz * 1.1 * dt;
+      if (!(inFort(nx, nz) && !(S2.tw.gopen > 0.7))) {
+        h.x = nx;
+        h.z = nz;
+      } else if (h.wp.length) h.wp.shift();
+    }
+    if (!h.wp.length && !loud) h.t = Math.max(h.t, 201);
     h.near = Math.hypot(h.x, h.z - (TOWN.FZ0 + TOWN.FZ1) / 2) < 120 ? 1 : 0;
     sim.t.hz = (sim.t.hz || 0) - dt;
     if (sim.t.hz <= 0 && S2.zombies.size < 20) {
@@ -2988,6 +3090,21 @@ function townUpdate(sim, dt) {
       }
     }
   }
+}
+var CORNERS = [[0, -104], [0, -140], [52, -104], [52, -140], [-52, -104], [-52, -140]].map(([x, z]) => ({ x, z }));
+function hordeRoute(sx, sz) {
+  const near2 = (x, z) => CORNERS.reduce((b, c2) => Math.hypot(c2.x - x, c2.z - z) < Math.hypot(b.x - x, b.z - z) ? c2 : b);
+  const out = [];
+  let c = near2(sx, sz);
+  out.push(c);
+  for (let k = 0; k < 3; k++) {
+    const nb = CORNERS.filter((q) => q !== c && (q.x === c.x || q.z === c.z) && Math.hypot(q.x - c.x, q.z - c.z) <= 52.1);
+    c = nb[Math.floor(Math.random() * nb.length)] || c;
+    out.push(c);
+  }
+  const ex = c.x - sx, ez = c.z - sz, L = Math.hypot(ex, ez) || 1;
+  out.push({ x: c.x + ex / L * 160, z: Math.max(-145, c.z + ez / L * 160) });
+  return out;
 }
 function townSpawn(S2, W) {
   const tw = S2.tw;
@@ -3469,8 +3586,28 @@ var Sim = class {
         else if (r < 0.7) this.give(p, "cloth", 1 + (r < 0.5 ? 1 : 0));
         else if (r < 0.88) this.give(p, "scrap", 1 + (r < 0.8 ? 1 : 0));
         else this.give(p, "wood", 2);
-      } else if (n.kind === "car") {
+      } else if (n.kind === "car" && !n.town) {
         this.give(p, "scrap", 2 + (r < 0.5 ? 1 : 0));
+        if (r > 0.6) this.give(p, "cloth", 1);
+      } else if (n.kind === "car" && n.town) {
+        this.give(p, "scrap", 1 + (r < 0.5 ? 1 : 0));
+        if (r > 0.45) this.give(p, "cloth", 1);
+        if (r < 0.35) this.give(p, "food", 1);
+      } else if (n.kind === "cupboard") {
+        this.give(p, "food", 1 + (r < 0.3 ? 1 : 0));
+        if (r > 0.7) this.give(p, "cloth", 1);
+      } else if (n.kind === "fridge") {
+        if (r < 0.6) this.give(p, "food", 1);
+        else this.toast(p.id, "The fridge is empty apart from the smell.");
+      } else if (n.kind === "closet") {
+        this.give(p, "cloth", 1 + (r < 0.5 ? 1 : 0));
+        if (r > 0.8) this.give(p, "scrap", 1);
+      } else if (n.kind === "dumpster") {
+        if (r < 0.45) this.give(p, "scrap", 1 + (r < 0.2 ? 1 : 0));
+        else if (r < 0.75) this.give(p, "cloth", 1);
+        else this.give(p, "food", 1);
+      } else if (n.kind === "junk") {
+        this.give(p, "scrap", 1);
         if (r > 0.6) this.give(p, "cloth", 1);
       } else if (n.kind === "barrel") {
         if (r < 0.55) this.give(p, "scrap", 1 + (r < 0.3 ? 1 : 0));
@@ -3887,10 +4024,11 @@ var Sim = class {
       const a = zs[i], b = zs[j], dx = b.x - a.x, dz = b.z - a.z, d = Math.hypot(dx, dz);
       if (d < 0.8 && d > 1e-3) {
         const push = (0.8 - d) * 0.5;
-        a.x -= dx / d * push;
-        a.z -= dz / d * push;
-        b.x += dx / d * push;
-        b.z += dz / d * push;
+        for (const [z, sg] of [[a, -1], [b, 1]]) {
+          const q = collide(W, S2, z.x + sg * dx / d * push, z.z + sg * dz / d * push, CFG.ZOMBIE_R, z.y || 0);
+          z.x = q.x;
+          z.z = q.z;
+        }
       }
     }
   }
@@ -4783,7 +4921,13 @@ function buildStory(M, W, T2) {
       x.strokeRect(3, 3, w - 6, h - 6);
       x.fillStyle = "#262626";
       x.textAlign = "center";
-      x.font = "bold 54px Georgia, serif";
+      {
+        let fs = 58;
+        do {
+          x.font = `bold ${fs}px Georgia, serif`;
+          fs -= 2;
+        } while (x.measureText(txt).width > w - 150 && fs > 20);
+      }
       x.fillText(txt, 120 + (w - 120) / 2, 70);
       x.font = "bold 26px sans-serif";
       x.fillText(sub, 120 + (w - 120) / 2, 108);
@@ -4797,8 +4941,7 @@ function buildStory(M, W, T2) {
       x.fillRect(0, 0, w, h);
     }) });
     const front = face("HARLOW", "1 mi"), back = face("CAMPSITES", "\xBD mi");
-    const board = mk(new THREE.BoxGeometry(1.5, 0.38, 0.05), [wood, wood, wood, wood, front, back], 0.5, 2.15, 0, sg);
-    board.name = "harlowSign";
+    const board = mk(new THREE.BoxGeometry(1.5, 0.38, 0.05), [wood, wood, wood, wood, front, back], 0.86, 2.15, 0, sg);
   }
   const paper = M.get("notePaper", { color: 15327948, rough: 1, side: THREE.DoubleSide });
   const notes = (W.notes || []).map((n) => {
@@ -4811,6 +4954,12 @@ function buildStory(M, W, T2) {
     notes[0].position.y = 1;
     notes[0].rotation.set(-0.35, 0, 0);
   }
+  (W.notes || []).forEach((n, i) => {
+    if (W.sign && /^Road sign/.test(n.text || "")) {
+      notes[i].position.set(W.sign.x, 1.35, W.sign.z + 0.1);
+      notes[i].rotation.set(0, 0, 0.04);
+    }
+  });
   if (notes[2] && car) notes[2].position.y = car.v === 1 ? 1.4 : 1.15;
   if (notes[3]) notes[3].position.y = 1.2;
   let last = "";
@@ -5337,12 +5486,7 @@ function buildBuilding(M, W, b, rnd2, quality) {
     add(tbox(pw - 0.04, 0.26, pd - 0.04, 0.4, rnd2() * 3, rnd2() * 3), concM, b.x - b.w / 2 - 0.4 + pw * (cI + 0.5), H + 0.13 + rnd2() * 0.04, b.z - b.d / 2 - 0.4 + pd * (rI + 0.5));
   }
   for (let k = 0; k < rows + 1; k++) if (rnd2() < 0.85) add(new THREE2.BoxGeometry(b.w + 0.6, 0.22, 0.2), woodM, b.x, H - 0.02, b.z - b.d / 2 + b.d * k / rows);
-  {
-    const s = add(tbox(2.6, 0.22, 1.6, 0.4), concM, b.slab.x, 0.85, b.slab.z);
-    rnd2();
-    s.rotation.z = 0.95;
-    s.rotation.y = 0.1;
-  }
+  rnd2();
   for (let k = 0; k < 8; k++) {
     const r = add(cyl(0.015, 0.015, 1 + rnd2(), 4), metalM, b.x + (rnd2() - 0.5) * b.w, H + 0.5, b.z + (rnd2() < 0.5 ? -b.d / 2 : b.d / 2));
     r.rotation.set((rnd2() - 0.5) * 0.7, 0, (rnd2() - 0.5) * 0.7);
@@ -5830,6 +5974,54 @@ function buildLantern(M) {
   handle.position.y = 0.115;
   g.add(handle);
   g.userData.core = core;
+  return g;
+}
+function buildFurn(M, n) {
+  const g = new THREE2.Group(), w = n.hx * 2, d = n.hz * 2, h = n.h || 1;
+  const col = { cupboard: 8018490, closet: 6966836, fridge: 14210248, dumpster: 3103290, junk: 6971992 }[n.kind] || 7829367;
+  const mat = M.get("furn_" + n.kind, { tex: n.kind === "fridge" || n.kind === "dumpster" ? "metal" : "planks", color: col, rough: 0.9, metal: n.kind === "dumpster" ? 0.4 : 0 });
+  const dark = M.get("furnDark", { color: 1709586, rough: 1 });
+  if (n.kind === "junk") {
+    for (let k = 0; k < 7; k++) {
+      const a = k * 0.9 + (n.rot || 0), r = 0.15 + k % 3 * 0.15;
+      const m = new THREE2.Mesh(k % 2 ? new THREE2.BoxGeometry(0.5, 0.25, 0.35) : new THREE2.CylinderGeometry(0.15, 0.18, 0.4, 6), k % 3 ? mat : dark);
+      m.position.set(Math.cos(a) * r, 0.15 + k % 3 * 0.12, Math.sin(a) * r);
+      m.rotation.set(k * 0.4, a, k * 0.3);
+      m.castShadow = true;
+      g.add(m);
+    }
+    g.userData.setOpen = (o) => {
+      g.scale.y = o ? 0.55 : 1;
+    };
+    return g;
+  }
+  const body = new THREE2.Mesh(new THREE2.BoxGeometry(w, h, d), mat);
+  body.position.y = h / 2;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  g.add(body);
+  const fd = n.fd || [0, 1], fx = fd[0], fz = fd[1];
+  const pivot = new THREE2.Group();
+  g.add(pivot);
+  let door;
+  if (n.kind === "dumpster") {
+    door = new THREE2.Mesh(new THREE2.BoxGeometry(w + 0.06, 0.06, d + 0.06), mat);
+    pivot.position.set(0, h, 0);
+    door.position.set(0, 0.03, 0);
+  } else {
+    const lat = fz !== 0 ? w : d, px = fz !== 0 ? -w / 2 : fx * (w / 2 + 0.02), pz = fz !== 0 ? fz * (d / 2 + 0.02) : -d / 2;
+    door = new THREE2.Mesh(new THREE2.BoxGeometry(fz !== 0 ? lat : 0.04, h * 0.92, fz !== 0 ? 0.04 : lat), mat);
+    pivot.position.set(px, h * 0.5, pz);
+    door.position.set(fz !== 0 ? lat / 2 : 0, 0, fz !== 0 ? 0 : lat / 2);
+    const gap = new THREE2.Mesh(new THREE2.BoxGeometry(fz !== 0 ? w * 0.9 : 0.01, h * 0.86, fz !== 0 ? 0.01 : d * 0.9), dark);
+    gap.position.set(fz !== 0 ? 0 : fx * (w / 2 + 5e-3), h * 0.5, fz !== 0 ? fz * (d / 2 + 5e-3) : 0);
+    g.add(gap);
+  }
+  pivot.add(door);
+  g.userData.setOpen = (o) => {
+    if (n.kind === "dumpster") pivot.rotation.x = o ? -1.2 : 0;
+    else pivot.rotation.y = o ? fz !== 0 ? -fz * 1.3 : fx * 1.3 : 0;
+  };
   return g;
 }
 
@@ -6462,6 +6654,31 @@ var VM_SWING = {
 
 // src/townview2.js
 import * as THREE5 from "three";
+function holeScan(root, R2) {
+  const px = (R2.x0 + R2.x1) / 2, pz = (R2.z0 + R2.z1) / 2;
+  root.updateMatrixWorld(true);
+  const hit = /* @__PURE__ */ new Set();
+  root.traverse((o) => {
+    if (!o.isMesh || !o.geometry || !o.geometry.attributes.position || /stair|tread|rail/i.test(o.name || "")) return;
+    const p = o.geometry.attributes.position, ix = o.geometry.index, e = o.matrixWorld.elements, n = ix ? ix.count : p.count;
+    const w = (i) => {
+      const x = p.getX(i), y = p.getY(i), z = p.getZ(i);
+      return [e[0] * x + e[4] * y + e[8] * z + e[12], e[1] * x + e[5] * y + e[9] * z + e[13], e[2] * x + e[6] * y + e[10] * z + e[14]];
+    };
+    const s = (a, b, c) => (a[0] - c[0]) * (b[2] - c[2]) - (b[0] - c[0]) * (a[2] - c[2]);
+    for (let t = 0; t < n; t += 3) {
+      const a = w(ix ? ix.getX(t) : t), b = w(ix ? ix.getX(t + 1) : t + 1), c = w(ix ? ix.getX(t + 2) : t + 2);
+      if (Math.max(a[1], b[1], c[1]) > 0.6 || Math.min(a[1], b[1], c[1]) < -0.45) continue;
+      const P = [px, 0, pz], d1 = s(P, a, b), d2 = s(P, b, c), d3 = s(P, c, a);
+      if (!((d1 < 0 || d2 < 0 || d3 < 0) && (d1 > 0 || d2 > 0 || d3 > 0))) {
+        (Array.isArray(o.material) ? o.material : [o.material]).forEach((m) => hit.add(m));
+        break;
+      }
+    }
+  });
+  for (const m of hit) holeify(m, R2);
+  return hit.size;
+}
 function holeify(m, R2) {
   if (!m || !R2 || m.userData.hole) return;
   m.userData.hole = 1;
@@ -6504,8 +6721,14 @@ function weathered(text, bg, fg, cross, seed) {
       tx = w / 2 + 40;
     }
     x.fillStyle = fg;
-    x.font = `bold ${text.length > 12 ? 50 : 62}px Georgia, serif`;
     x.textAlign = "center";
+    {
+      let fs = 64;
+      do {
+        x.font = `bold ${fs}px Georgia, serif`;
+        fs -= 2;
+      } while (x.measureText(text).width > (cross ? w - 150 : w - 40) && fs > 16);
+    }
     x.textBaseline = "middle";
     x.fillText(text, tx, h / 2 + 4);
     x.globalCompositeOperation = "destination-out";
@@ -6561,7 +6784,13 @@ function buildTown2(M, W, T2, g, SH) {
     const jit = (c, h, k) => C4.set(c).offsetHSL(0, 0, (h - 0.5) * k).getHex();
     for (const h of nb.homes) {
       const w = h.x1 - h.x0, d = h.z1 - h.z0, fx = h.face[0], fz = h.face[1], along2 = fz !== 0, fw = along2 ? w : d;
-      put(h.brick ? "brick" : "siding", tbox(w, h.H, d, 0.5), h.cx, h.H / 2, h.cz, 0, jit(h.brick ? 11836040 : h.col, h.hue, 0.2));
+      {
+        const wc = jit(h.brick ? 11836040 : h.col, h.hue, 0.2), wk = h.brick ? "brick" : "siding";
+        for (const [a, b, c, e] of h.walls || [[h.x0, h.x1, h.z0, h.z1]]) put(wk, tbox(b - a, h.H, e - c, 0.5), (a + b) / 2, h.H / 2, (c + e) / 2, 0, wc);
+        put("plank", tbox(w - 0.4, 0.06, d - 0.4), h.cx, 0.03, h.cz, 0, 6969928);
+        put("kiosk", tbox(w - 0.4, 0.08, d - 0.4), h.cx, Math.min(h.H, 3) - 0.04, h.cz, 0, 9077882);
+        if (h.H > 3.2) put(wk, tbox(w, h.H - 3, d, 0.5), h.cx, 3 + (h.H - 3) / 2, h.cz, 0, wc);
+      }
       if (h.two) put("trim", new THREE5.BoxGeometry(w + 0.1, 0.12, d + 0.1), h.cx, 3, h.cz, 0, 14209216);
       const rc = [4864562, 3817028, 5913130, 3029552][Math.floor(h.hue * 4)];
       if (h.roof === "flat") {
@@ -6576,8 +6805,8 @@ function buildTown2(M, W, T2, g, SH) {
       const fxp = along2 ? h.cx : h.cx + fx * (w / 2 + 0.03), fzp = along2 ? h.cz + fz * (d / 2 + 0.03) : h.cz;
       const ry = along2 ? 0 : Math.PI / 2, lat = (u) => along2 ? [fxp + u, fzp] : [fxp, fzp + u];
       {
-        const [x, z] = lat(0);
-        put("door", new THREE5.BoxGeometry(1, 2.1, 0.08), x, 1.05, z, ry, 4861984);
+        const [x, z] = lat(-0.62);
+        put("door", new THREE5.BoxGeometry(1, 2.1, 0.06), x + fx * 0.5, 1.05, z + fz * 0.5, ry + Math.PI / 2, 4861984);
       }
       let wi = 0;
       for (let f = 0; f < (h.two ? 2 : 1); f++) for (const u of [-fw * 0.3, fw * 0.3]) {
@@ -6676,11 +6905,18 @@ function buildTown2(M, W, T2, g, SH) {
           x.lineWidth = 3;
           x.strokeRect(3, 3, w - 6, h - 6);
           x.fillStyle = "#f0f0e8";
-          x.font = "bold 26px sans-serif";
           x.textAlign = "center";
-          x.fillText(nm.toUpperCase(), w / 2, 33);
+          {
+            let fs = 30;
+            do {
+              x.font = `bold ${fs}px sans-serif`;
+              fs -= 1;
+            } while (x.measureText(nm.toUpperCase()).width > w - 20 && fs > 10);
+          }
+          x.fillText(nm.toUpperCase(), w / 2, 34);
         });
-        const fm = new THREE5.MeshLambertMaterial({ map: tex });
+        const fm = new THREE5.MeshLambertMaterial({ map: tex, emissive: 16777215, emissiveMap: tex, emissiveIntensity: 0 });
+        (out.signMats || (out.signMats = [])).push(fm);
         const pl = mk(new THREE5.BoxGeometry(1.3, 0.24, 0.03), [pole, pole, pole, pole, fm, fm], s.x, 2.7 + i * 0.27, s.z, g, false);
         const st = STREETS.find((q) => q[0] === nm);
         pl.rotation.y = st && st[2] === st[4] ? 0 : Math.PI / 2;
@@ -6823,7 +7059,8 @@ function buildTown2(M, W, T2, g, SH) {
   const signWood = M.get("signWood", { tex: "planks", color: 10126438, rough: 1 });
   out.signs = 0;
   for (const s of storeSigns(W)) {
-    const p = pal[s.kind] || ["#ccc", "#222", 0], tex = weathered(s.text, p[0], p[1], p[2], s.x * 13 + s.z * 7 | 0), fm = new THREE5.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0 });
+    const p = pal[s.kind] || ["#ccc", "#222", 0], tex = weathered(s.text, p[0], p[1], p[2], s.x * 13 + s.z * 7 | 0), fm = new THREE5.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, emissive: 16777215, emissiveMap: tex, emissiveIntensity: 0 });
+    (out.signMats || (out.signMats = [])).push(fm);
     const len = Math.min(5, 1.2 + s.text.length * 0.28), m = mk(new THREE5.BoxGeometry(0.08, 0.9, len), [fm, fm, signWood, signWood, signWood, signWood], s.x + s.face * 0.05, 3.3, s.z, g, false);
     m.rotation.z = s.face * 0.03;
     m.rotation.x = s.x * 7 % 1 * 0.06;
@@ -6841,7 +7078,7 @@ function buildTown2(M, W, T2, g, SH) {
       mk(tbox(0.04, -F / n, zw, 0.5), step, x + run / n / 2, y + -F / n / 2 - 0.12 * 0, zc, g, false);
     }
     for (const z of [sw.z0 - 0.06, sw.z1 + 0.06]) mk(tbox(run + 0.3, -F, 0.12, 0.5), conc, (sw.x0 + sw.x1) / 2, F / 2, z, g, false);
-    mk(tbox(0.12, -F, zw + 0.24, 0.5), conc, sw.x0 - 0.06 + 0 * run, F / 2, zc, g, false);
+    mk(tbox(0.12, -F, zw + 0.24, 0.5), conc, sw.x1 + 0.06, F / 2, zc, g, false);
     for (const z of [sw.z0 - 0.06, sw.z1 + 0.06]) {
       mk(new THREE5.BoxGeometry(run, 0.06, 0.06), rust, (sw.x0 + sw.x1) / 2, 1, z, g, false);
       for (let k = 0; k <= 3; k++) mk(new THREE5.BoxGeometry(0.05, 1, 0.05), rust, sw.x0 + k * run / 3, 0.5, z, g, false);
@@ -6879,6 +7116,7 @@ function buildTown2(M, W, T2, g, SH) {
     const rack = shelfUnit(Bm.zsp[1].x + 3.9, room.z1 - 1, 1.2, 0.4, true);
     rack.rotation.x = -1.3;
     rack.position.y = F + 0.25;
+    rack.position.z = room.z1 - 0.45;
     const tool = M.get("bsmTool", { tex: "metal", color: 8025200, metal: 0.6, rough: 0.6 });
     for (let k = 0; k < 9; k++) {
       const x = room.x0 + 0.8 + k * 1.7 % (rw - 1.6), z = room.z0 + 1.2 + k * 2.3 % (rd - 2);
@@ -13822,6 +14060,7 @@ var View = class {
       wg.add(this.townv.group);
       this.townv.onScrape = (x, z) => this.onScrape && this.onScrape(x, z);
     }
+    if (W.bsm) this.holeN = holeScan(this.scene || wg, W.bsm.sw);
     this.lampSpot.position.copy(this.camp.lampPos);
     if (this.lampSpot.target) this.lampSpot.target.position.set(this.camp.lampPos.x + 0.4, 0, this.camp.lampPos.z + 0.3);
     this.fireLight.position.set(this.camp.firePos.x, 0.9, this.camp.firePos.z);
@@ -13916,7 +14155,7 @@ var View = class {
     this.lootViews = /* @__PURE__ */ new Map();
     W.loot.forEach((n, i) => {
       if (n.kind === "tree") return;
-      const g = n.kind === "crate" ? buildCrate(M, T2) : n.kind === "barrel" ? buildBarrel(M, T2, hash(i * 1.7)) : buildCar(M, T2, n.hue, n.v);
+      const g = n.kind === "crate" ? buildCrate(M, T2) : n.kind === "barrel" ? buildBarrel(M, T2, hash(i * 1.7)) : n.kind === "car" ? buildCar(M, T2, n.hue, n.v) : buildFurn(M, n);
       g.position.set(n.x, 0, n.z);
       g.rotation.y += n.rot;
       wg.add(g);
@@ -14205,6 +14444,7 @@ var View = class {
       this.corpses = [];
     }
     this.lastTime = S2.time;
+    this.lastS = S2;
     if (S2.lootVer !== this.lootVer) this.syncLoot(S2);
     if (this.story) this.story.update(S2, performance.now() / 1e3);
     if (this.townv) this.townv.update(S2, Math.min(0.1, dt), this.camera && this.camera.position, me);
@@ -14283,6 +14523,16 @@ var View = class {
     M.swayU.value = time * 1;
     this.sky.u.uTime.value = time;
     this.renderer.toneMappingExposure = 1 + night * 0.15;
+    {
+      const sm = this.townv && this.townv.t2 && this.townv.t2.signMats;
+      if (sm) {
+        const ei = night * 0.38;
+        if (Math.abs((this.signEI ?? -1) - ei) > 0.01) {
+          this.signEI = ei;
+          for (const m of sm) m.emissiveIntensity = ei;
+        }
+      }
+    }
     const alive = me && me.alive, flick = 0.88 + Math.sin(time * 13.1) * 0.05 + Math.sin(time * 31.7 + 1.3) * 0.04 + Math.sin(time * 7.3) * 0.03;
     const dark = smooth(0.05, 0.8, 1 - Ls);
     const lanI = (0.1 + dark) * (alive ? 1 : 0);
@@ -14866,6 +15116,19 @@ var View = class {
   render() {
     const r = this.renderer;
     if (this.post) {
+      const ao = this.post.ao;
+      if (ao && this.W && this.lastS) {
+        const c = this.camera.position;
+        let d = 9;
+        probeObstacles(this.W, this.lastS, c.x, c.z, (k, a, b, cc, dd, h) => {
+          if (h < c.y - 0.3) return;
+          const dx = k === 0 ? Math.hypot(c.x - a, c.z - b) - cc : Math.hypot(Math.max(a - c.x, 0, c.x - b), Math.max(cc - c.z, 0, c.z - dd));
+          if (dx < d) d = dx;
+        });
+        const want = 0.85 * Math.max(0, Math.min(1, (d - 0.45) / 0.9));
+        if (Math.abs(ao.blendIntensity - want) > 0.01) ao.blendIntensity += (want - ao.blendIntensity) * 0.3;
+        ao.enabled = ao.blendIntensity > 0.02;
+      }
       this.post.composer.render();
       return;
     }
@@ -17977,6 +18240,29 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
     }
     return best;
   }
+  /** v7.0.1: horizontal distance to where the view ray hits the floor (or stops short of a wall), clamped 0.6–3.4 m. */
+  potAim() {
+    const me = this.me, W = this.W, S2 = this.S, fx = -Math.sin(me.yaw), fz = -Math.cos(me.yaw), pit = this.ctl.pitch, ey = (me.y || 0) + CFG.EYE;
+    const cp = Math.cos(pit), sp = Math.sin(pit);
+    let d = 3.4;
+    for (let t = 0.1; t < 6; t += 0.05) {
+      const hd = t * cp, y = ey + t * sp, x = me.x + fx * hd, z = me.z + fz * hd;
+      const fl = groundAt(W, S2, x, z, me.y || 0);
+      if (y <= fl + 0.02) {
+        d = hd;
+        break;
+      }
+      if (hd > 0.35) {
+        const q = collide(W, S2, x, z, 0.05, Math.max(fl, y - 0.4));
+        if (Math.hypot(q.x - x, q.z - z) > 0.01) {
+          d = Math.max(0.6, hd - 0.35);
+          break;
+        }
+      }
+      if (hd > 3.4) break;
+    }
+    return Math.max(0.6, Math.min(3.4, d));
+  }
   buildTick(pr, dt) {
     const me = this.me, S2 = this.S, bm = this.bm, pc = PIECES[bm.type];
     if (pr.has("rot")) bm.rot = bm.rot + 1 & 3;
@@ -17996,7 +18282,8 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       const st = this.aimStruct();
       if (st) this.act("dem", { id: st.id });
     }
-    const aim = pc.cls === "edge" ? 3.2 : 3.4;
+    let aim = pc.cls === "edge" ? 3.2 : 3.4;
+    if (bm.type === "pot") aim = this.potAim();
     const res = canPlace(this.W, S2, me, bm.type, bm.tier, bm.rot, me.x - Math.sin(me.yaw) * aim, me.z - Math.cos(me.yaw) * aim);
     bm.res = res;
     this.view.setGhost(res, bm.type, bm.tier);

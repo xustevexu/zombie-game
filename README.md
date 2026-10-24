@@ -7,6 +7,16 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.0.1 — playtest fixes + town loot (Oct 23, 2026)
+- Harlow signpost: the board hangs clear of the post so the arrow shows; the road-sign note is pinned to the post (no floating plank); all sign text (signpost, street signs, shop signs) is sized to fit its board.
+- Shop and street signs pick up faint moonlight at night so they stay readable.
+- Screen-space AO fades out when your view is right up against a wall, so building corners no longer go black.
+- The leaning concrete slabs are gone.
+- Hardware basement: the stair opening is clear (no floor over it), the stairwell walls and the underside of the stairs are solid, the bottom end is open into the storeroom, the toppled rack sits against the wall, and walking under the stairs no longer pops you upstairs.
+- Hordes spawn outside town (never inside or behind the fort), follow the street corners, stop at the closed fort, and a packed horde can no longer shove zombies through walls.
+- Loot: homes are enterable (doorway on the street side) with kitchen cupboards, fridges and closets; town wrecks have trunk + glovebox loot; crates, barrels and dumpsters along the streets and a crate by every garage; yard trees are full-size and choppable; inside the fort only junk piles can be scavenged.
+- Pot placement follows the crosshair down to the floor (0.6–3.4 m), so pots can be placed while standing inside the shack.
+
 ## v7.0 — Harlow outskirts, a real basement, placeable grow pots (Oct 23, 2026)
 - **Shovel & digging**: crafting tells you exactly what you got and where it went (e.g. "Shovel added to your hotbar…"). The shovel gets its own hotbar slot and shows in your hand. With it selected you can dig **anywhere on natural ground** (grass, dirt, yards, fields, forest). Use E ("Dig") or LMB. You can't dig on roads, sidewalks, paved lots, floors, inside the fort or underground. Each dig leaves a small hole, and the same spot needs ~90 s before you can dig it again. The marked soil patches (tilled rows, stone ring, stake) are easy to spot and always diggable. The quest no longer points to a soil patch; it just says to dig on open ground.
 - **One Build / Craft / Grow menu**: B and G now open the same menu with tabs. Every item shows its cost against what you carry; anything you can't afford is greyed out and says what you're missing (e.g. "Shovel: 3 wood + 2 scrap. You have 1 wood").
@@ -150,7 +160,7 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Move / sprint | WASD, Shift | left joystick (push to the edge) |
 | Jump | Space | JUMP |
 | Swing / chop | LMB (hold) | HIT |
-| Interact (scavenge, board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
+| Interact (scavenge crates, barrels, dumpsters, cars, cupboards, fridges, closets, fort junk piles; board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
 | Crouch (quieter, slower; zombies notice you at half range) | C (hold) or Z (toggle); Left Ctrl only in fullscreen with Keyboard Lock (Chrome) | CROUCH |
 | Build / Craft / Grow menu — one menu with tabs (Q / E or click to switch). Craft: bow, arrows, steel axe (near a workbench). Grow: grow pot, planter, bucket, shovel, dig dirt, compost. Each item shows its cost and what you have; greyed items list what's missing | B (G opens it on the Craft tab; 1-9 pick) | BUILD/CRAFT or CRAFT |
 | Bow (quiet; needs arrows) | 7, LMB | slot 7, HIT |
@@ -163,7 +173,7 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Quest waypoint on/off | N | — |
 | Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed | E | USE |
 | Packaging bench: drag bud → baggie, drag zip / SEAL; leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
-| Place a grow pot | B → Grow tab → Grow pot (R rotates) | BUILD/CRAFT |
+| Place a grow pot (the ghost follows the crosshair to the floor; look down to place it as close as ~0.6 m) | B → Grow tab → Grow pot (R rotates, LMB places) | BUILD/CRAFT, then PLACE |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
 | Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
 
