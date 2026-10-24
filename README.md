@@ -7,6 +7,14 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.4 — outside CC0 models everywhere, home doors, scavenged baggies (Oct 24, 2026)
+- Models: Kenney CC0 models now replace the home-made ones. That covers cars (the battery car too, whose hood still lifts), crates, barrels, dumpsters, junk piles, kitchen cabinets and cupboards, closets, fridges, stoves, sinks, tables, sofas, beds, shelves, the packaging bench, the fort walls, power poles, the closed town houses and the outside-chunk trees. Colliders, loot and interactions are unchanged.
+- Fixed the squashed/garbled Kenney meshes. Quantized vertex data is now converted to floats before it's transformed, so trees and cars look right.
+- Every neighbourhood home has a hinged door that opens AND closes with E. A closed door blocks zombies and attacks, and zombies can bash it down. Gus's house, the bought house and the shack already worked this way.
+- Zombies killed in the basement now leave bodies on the basement floor.
+- Empty baggies are a scavenged resource. The packaging bench starts with 50. Kitchen cupboards have a 40% chance of 3–8. Packaging uses them up, the bench shows how many are left, and packing is blocked with a message when you run out.
+- Note: on file:// the GLBs can't load, so the old procedural models are shown instead. Use the GitHub Pages link.
+
 ## v7.3 — the open world, the road to Kessler, co-op avatars (Oct 24, 2026)
 - **Co-op avatars** are now the Quaternius animated characters (same as the townspeople), with walking, crouching and swinging animations kept in sync over the network.
 - **No more hard borders.** The land outside Harlow streams in as 64 m chunks (trees, rocks and bushes from Kenney's Nature Kit, all solid) out to a rocky ridge ~1 km away. Low-tier phones draw 5x5 chunks, Medium/High 7x7.
@@ -177,6 +185,8 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Jump | Space | JUMP |
 | Swing / chop | LMB (hold) | HIT |
 | Interact (scavenge crates, barrels, dumpsters, cars, cupboards, fridges, closets, fort junk piles; board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
+| Open / close a home door (neighbourhood homes, Gus's house, bought house, shack) | E | ACT |
+| Package baggies at the bench (uses empty baggies; count shown, scavenge more from kitchen cupboards) | E | ACT |
 | Crouch (quieter, slower; zombies notice you at half range) | C (hold) or Z (toggle); Left Ctrl only in fullscreen with Keyboard Lock (Chrome) | CROUCH |
 | Build / Craft / Grow menu — one menu with tabs (Q / E or click to switch). Craft: bow, arrows, steel axe (near a workbench). Grow: grow pot, planter, bucket, shovel, dig dirt, compost. Each item shows its cost and what you have; greyed items list what's missing | B (G opens it on the Craft tab; 1-9 pick) | BUILD/CRAFT or CRAFT |
 | Bow (quiet; needs arrows) | 7, LMB | slot 7, HIT |
