@@ -142,6 +142,16 @@
   #bCancel { right:calc(92px + env(safe-area-inset-right)); bottom:calc(150px + env(safe-area-inset-bottom)); width:52px; height:52px; font-size:12px; }
   #bDem { right:calc(150px + env(safe-area-inset-right)); bottom:calc(146px + env(safe-area-inset-bottom)); width:52px; height:52px; font-size:11px; }
   #xpfloat { position:absolute; left:max(10px,env(safe-area-inset-left)); top:92px; font-size:11px; color:#9fd8ff; opacity:0; transition:opacity .4s; } #xpfloat.on { opacity:1; }
+  /* portrait phones: clock on its own top line, stats/minimap/buttons below it, hint under the stat column so nothing overlaps */
+  @media (orientation:portrait) and (max-width:620px) {
+    #clock { top:calc(4px + env(safe-area-inset-top)); max-width:none; width:100vw; white-space:nowrap; }
+    #clock .t { font-size:12px; letter-spacing:0; display:inline-block; }
+    #stats { top:calc(26px + env(safe-area-inset-top)); width:min(140px,38vw); }
+    #mmwrap { top:calc(26px + env(safe-area-inset-top)); }
+    body.touch #bPause, body.touch #bFs { top:calc(30px + env(safe-area-inset-top)); width:34px; height:34px; }
+    body.touch #bPause { right:auto; left:calc(min(140px,38vw) + 18px); } body.touch #bFs { right:auto; left:calc(min(140px,38vw) + 58px); }
+    #obj { position:fixed; right:max(10px,env(safe-area-inset-right)); top:calc(150px + env(safe-area-inset-top)); width:calc(100vw - min(140px,38vw) - 30px); text-align:left; box-sizing:border-box; font-size:12px; padding:5px 10px; white-space:normal; }
+  }
 </style>
 <script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js"}}</script>
 <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
@@ -5462,7 +5472,9 @@ var GTAOPass = class _GTAOPass extends Pass {
     const cache2 = this._visibilityCache;
     scene.traverse(function(object) {
       cache2.set(object, object.visible);
-      if (object.isPoints || object.isLine) object.visible = false;
+      if (object.isPoints || object.isLine || object.isSprite) object.visible = false;
+      const m = object.material;
+      if (m && !Array.isArray(m) && (m.transparent || m.alphaTest > 0 || m.depthWrite === false || m.side === 1 || m.userData.noAO)) object.visible = false;
     });
   }
   restoreVisibility() {
