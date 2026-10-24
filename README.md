@@ -7,6 +7,32 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.0 — Harlow outskirts, a real basement, placeable grow pots (Oct 23, 2026)
+- **Shovel & digging**: crafting tells you exactly what you got and where it went (e.g. "Shovel added to your hotbar…"). The shovel gets its own hotbar slot and shows in your hand. With it selected you can dig **anywhere on natural ground** (grass, dirt, yards, fields, forest). Use E ("Dig") or LMB. You can't dig on roads, sidewalks, paved lots, floors, inside the fort or underground. Each dig leaves a small hole, and the same spot needs ~90 s before you can dig it again. The marked soil patches (tilled rows, stone ring, stake) are easy to spot and always diggable. The quest no longer points to a soil patch; it just says to dig on open ground.
+- **One Build / Craft / Grow menu**: B and G now open the same menu with tabs. Every item shows its cost against what you carry; anything you can't afford is greyed out and says what you're missing (e.g. "Shovel: 3 wood + 2 scrap. You have 1 wood").
+- **Your shack**: the gate guardhouse is rebuilt (thin walls, boarded window, roof, a door you open/close with E, matching colliders). Gus now says it's yours; map label "Your shack".
+- **Seeds & soil**: the dispensary plant gives exactly 1 seed, once (no respawn). Harvests yield ~1.2 seeds on average (seed chance upgradable). Dirt patches around town (shack lot, gate verge, park strip, fort planters, yards) — dig with a shovel; nearest soil shows on the map and quest hint.
+- **Surroundings**: tree lines, forest, fields, 5 farms (house/barn/shed/fences), side roads, power poles, wrecks, rocks and brush — instanced so Low stays fast.
+- **Zombies**: daytime cap-cull no longer touches horde, chasing or basement zombies, and despawns sink away instead of falling over like a kill.
+
+
+- **Outskirts:** about 40 varied homes along Birch Ln, Elm St, Cedar Ave and Oak Ave. They have 1 or 2 storeys, gable, hip or flat roofs, siding or brick, porches, broken or boarded windows, attached or detached 1- or 2-car garages, fences, mailboxes, yard trees and overgrown lawns. There are also street-name signs, sidewalks and abandoned cars. Everything is built as merged geometry with shared materials, so Low quality stays fast. The camp → gate road stays clear.
+- **New storefronts:** a diner, a pharmacy and a gas station. Every shop has a weathered, non-glowing painted sign; the dispensary's has a green cross.
+- **Harlow sign:** the arrow now has its own panel on the left, and the back face reads "CAMPSITES". The paint is plain, with no glow.
+- **Gate eye-slot:** it scrapes open to show Gus's eyes when you talk to him and shuts when you leave. This is synced in co-op.
+- **Hardware basement:** unlock the padlocked door with Gus's key, walk down the stairs into a dark, lantern-lit storeroom with smashed shelves and broken tools, and take the pot and soil from the shelf (E). 1–2 zombies wait down there.
+- **Your shack:** Gus now tells you the guardhouse by the gate is yours to grow in. It is a closed building with four walls, a boarded window, a roof and a door that opens and closes with E. The colliders match.
+- **Grow pots are placeable** (B → Grow pot). They use the ghost preview (green or red tint, R rotates). They are allowed in your shack, anywhere outside the fort, or by Gus's house or your room inside it.
+  - E fills the pot with soil, then plants a seed.
+  - The plant shows visible stages: seedling → small → vegetative → flowering → ready.
+  - Look at a pot to see its progress label and bar.
+  - Water it once a day (E) to grow faster.
+  - Harvesting cuts the plant down and gives you buds.
+  - Visuals update live for host and guest (fixed: v6.9 showed pots only after Continue). Old v6.9 pots migrate automatically.
+- **Quest markers** on the minimap and full map, labels (Hardware, Dispensary, Harlow gate, Your shack), and an on-screen waypoint with distance (**N** toggles it).
+- **Ctrl+W safety:** crouch moved to **C** (Z toggles). Left Ctrl only crouches under Keyboard Lock in fullscreen, which the game enters on start. Leaving asks "Leave the game?" and autosaves first. The character screen moved to **K**.
+- **Fix:** horde zombies no longer "drop dead" in daytime. The cap cull skips horde and chasing zombies and only removes zombies out of sight (45 m+). Only real kills play the fall; despawns sink away quietly.
+
 ## v6.9 — the town of Harlow (Oct 23, 2026)
 - **Harlow**: follow the road north past the ruins to a walled fort block (10 houses per side, a gate, an eye-slot). Gus lives behind the gate.
 - **Entry quest (weed tutorial)**: Gus's key → hardware-store basement (pot + soil) → dispensary planter (seeds) → plant in the shack by the gate → harvest → package at the bench → bring Gus 5 baggies.
@@ -119,14 +145,18 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Jump | Space | JUMP |
 | Swing / chop | LMB (hold) | HIT |
 | Interact (scavenge, board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
-| Crouch (quieter, slower; zombies notice you at half range) | Left Ctrl (hold) or Z (toggle) | CROUCH |
-| Craft menu (planter, bucket, shovel, bow, arrows, dig dirt, compost); steel axe near a workbench | G | CRAFT |
+| Crouch (quieter, slower; zombies notice you at half range) | C (hold) or Z (toggle); Left Ctrl only in fullscreen with Keyboard Lock (Chrome) | CROUCH |
+| Build / Craft / Grow menu — one menu with tabs (Q / E or click to switch). Craft: bow, arrows, steel axe (near a workbench). Grow: grow pot, planter, bucket, shovel, dig dirt, compost. Each item shows its cost and what you have; greyed items list what's missing | B (G opens it on the Craft tab; 1-9 pick) | BUILD/CRAFT or CRAFT |
 | Bow (quiet; needs arrows) | 7, LMB | slot 7, HIT |
+| Dig dirt (shovel selected in the hotbar, on grass / dirt) | E or LMB | ACT / HIT |
 | Talk to townspeople, knock at the Harlow gate, grow (pots), package (bench) | E (1-9 pick a dialogue option) | ACT |
 | Journal (objective, quest, customers, grow slots, caption log); dismiss newest caption | J; Q or click | JOURNAL; tap caption |
 | Eat / bandage | F / H | EAT / HEAL |
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
-| Character screen | C | STATS |
+| Character screen | K | STATS |
+| Quest waypoint on/off | N | — |
+| Open/close your shack door, use a pot (soil, seed, water, harvest) | E | USE |
+| Place a grow pot | B → Grow tab → Grow pot (R rotates) | BUILD/CRAFT |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
 | Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
 
