@@ -102,7 +102,7 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Move / sprint | WASD, Shift | left joystick (push to the edge) |
 | Jump | Space | JUMP |
 | Swing / chop | LMB (hold) | HIT |
-| Interact (scavenge, board up, doors, chests, beds, pick up axe) | E | ACT |
+| Interact (scavenge, board up, doors, chests, beds, pick up axe, car hood/battery, radio, read notes) | E | ACT |
 | Steel axe (near a workbench) | G | AXE |
 | Eat / bandage | F / H | EAT / HEAL |
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
@@ -225,3 +225,28 @@ Embedded data takes priority over the music/ folder.
 ### Not verified
 Real audio device / how it sounds, real GPU, phones; mixing levels (night low-pass, ducking) are judged only from node
 values in headless tests. Co-op was tested on Low only.
+
+## v6.6 – v6.8
+
+**v6.6:** High-tier dark "slabs" on phones are fixed. They came from the GTAO ambient-occlusion depth pre-pass, which drew transparent and alpha-card geometry (foliage, mist, glass, sky) as if it were solid. That pre-pass now skips non-opaque materials. The portrait phone HUD was also re-laid out so the clock, stats, buttons and objective box no longer overlap.
+
+**v6.7 (models):** I looked for realistic rigged CC0 or CC-BY zombies and first-person arms.
+- Quaternius zombies on poly.pizza are CC0 and animated, but too cartoony, so they were not used.
+- Quaternius Universal Base Characters and the Universal Animation Library (CC0, on itch.io) need a browser download.
+- Mixamo and Sketchfab need an account.
+
+What shipped is improved procedural models:
+- Zombies get mottled skin, torn clothing with alpha cut-outs, lathe-shaped limbs, ribs, a hinged jaw with teeth, and clawed hands.
+- The first-person view gets gloved hands with knuckles, sleeves and cuffs.
+- Low stays light.
+
+**v6.8 (new opening):** You wake inside your tent on a camping trip, and something is very wrong.
+- There is one house nearby, with a broken radio on its table.
+- The nearby car has a battery: open the hood [E], take the battery [E], then repair the radio [E].
+- The broadcast points you to the fortified town of **Harlow**, which is then marked on the map. A road sign at the edge of the woods points the way.
+- Notes and overgrowth hint that far more than one night has passed.
+- There is no more "survive 3 nights" win and no horde nights. Wandering zombies and the day/night cycle remain.
+- In co-op either player can do any step, and the state is synced.
+- Dead trees now have round, tapered limbs attached to the trunk.
+- Pines and firs have denser foliage.
+- Opened crates and barrels are hollow, with dark interiors, rims, and the lid swung open or set aside.
