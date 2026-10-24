@@ -7,6 +7,14 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.5 — skills & perks, choppable forest, clean picture, real map (Oct 24, 2026)
+- **Skills & perks** (character screen, **K**): Dealing, Scavenging and Woodcutting go from 0 to 10 as you use them. Perks unlock at set levels: **Pack All** (Dealing 7; Package all at the bench is no longer free), Smooth Talker (Dealing 4, the scale settles 2× faster), Keen Eye (Scavenging 4, more baggies in cupboards), Pack Rat (Scavenging 8, bonus scrap/cloth), Clean Cuts (Woodcutting 3, +15% chop damage), Lumberjack (Woodcutting 7, 4 logs). Saved and synced in co-op.
+- **Every open-world tree can be chopped.** It falls, drops logs, stays felled (saved and synced) and regrows after 6 in-game days.
+- **Opened furniture keeps its new model.** Cupboards, closets, fridges and dumpsters get a darker "searched" tint. Nothing glows inside them.
+- **Cleaner picture:** film grain, vignette and chromatic blur are removed on every tier, and night bloom is strongly reduced.
+- **Map:** the minimap follows you across the whole open world. The full map (hold **M**/Tab) has fog of war; zoom with the wheel or +/−, pan by dragging or with the arrow keys, and press 0 to re-centre. It shows you, friends and story-revealed waypoints only.
+- **Road:** the corridor is clear (no trees, rocks or brush on it). Power poles and street signs stand at even spacing on the shoulders and have colliders. The road leaves Harlow by the east wall and runs **north**; all dialogue and notes now agree.
+
 ## v7.4 — outside CC0 models everywhere, home doors, scavenged baggies (Oct 24, 2026)
 - Models: Kenney CC0 models now replace the home-made ones. That covers cars (the battery car too, whose hood still lifts), crates, barrels, dumpsters, junk piles, kitchen cabinets and cupboards, closets, fridges, stoves, sinks, tables, sofas, beds, shelves, the packaging bench, the fort walls, power poles, the closed town houses and the outside-chunk trees. Colliders, loot and interactions are unchanged.
 - Fixed the squashed/garbled Kenney meshes. Quantized vertex data is now converted to floats before it's transformed, so trees and cars look right.
@@ -18,7 +26,7 @@
 ## v7.3 — the open world, the road to Kessler, co-op avatars (Oct 24, 2026)
 - **Co-op avatars** are now the Quaternius animated characters (same as the townspeople), with walking, crouching and swinging animations kept in sync over the network.
 - **No more hard borders.** The land outside Harlow streams in as 64 m chunks (trees, rocks and bushes from Kenney's Nature Kit, all solid) out to a rocky ridge ~1 km away. Low-tier phones draw 5x5 chunks, Medium/High 7x7.
-- **The road out of Harlow** runs ~820 m north to the fenced **Kessler research site**. On the way: a **crashed car with skeletons and a note**, a **police roadblock**, an **overrun camp** (zombies rise when you get close), and a **hidden cabin** in the woods west of the road. Notes at the crash, roadblock and cabin (or asking the mayor about the road) reveal the research-site waypoint; there's no waypoint before that. Reaching the gate plays a short scene — the site itself is the next batch.
+- **The road out of Harlow** leaves by Harlow's east wall and runs ~820 m north to the fenced **Kessler research site**. On the way: a **crashed car with skeletons and a note**, a **police roadblock**, an **overrun camp** (zombies rise when you get close), and a **hidden cabin** in the woods west of the road. Notes at the crash, roadblock and cabin (or asking the mayor about the road) reveal the research-site waypoint; there's no waypoint before that. Reaching the gate plays a short scene — the site itself is the next batch.
 - **Road gang:** three raiders guard the road. When they stop you: **pay** ($20, 2 food or 3 scrap), **talk** (better odds as you level), **fight** (they hit hard; each one drops cash, scrap and food) or **flee**. Paying holds for the day.
 - **CC0 assets:** Kenney car, suburban, commercial, road, survival and nature kits (the road cars, the roadblock, the gang van, tents, the research-site props and the wild scatter) and Quaternius deer, raccoon, boar and chicken (animated; the boxy chicken is gone; the rabbit became a raccoon since there is no CC0 animated quadruped rabbit). Credits in `assets/CREDITS.md`.
 - **Zombies** now path round to an opening, or bash a closed door or your wall when there's no way round.
@@ -195,13 +203,15 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Journal (objective, quest, customers, grow slots, caption log); dismiss newest caption | J; Q or click | JOURNAL; tap caption |
 | Eat / bandage | F / H | EAT / HEAL |
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
-| Character screen | K | STATS |
+| Character screen (stats, skills & perks) | K | STATS |
 | Quest waypoint on/off | N | — |
 | Road gang: Pay / Talk / Fight / Flee (opens when they stop you) | E, then 1-4 | ACT, then tap |
 | Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed (night only: skips to 7 AM) | E | USE |
 | Packaging bench: drag bud → baggie, drag zip / SEAL, Take out (returns the portion); leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
 | Place a grow pot (the ghost follows the crosshair to the floor; look down to place it as close as ~0.6 m) | B → Grow tab → Grow pot (R rotates, LMB places) | BUILD/CRAFT, then PLACE |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
+| Full map zoom / pan / re-centre | wheel or +/−; drag or arrow keys; 0 | — |
+| Chop any tree (town or forest) | swing the axe at it | attack button |
 | Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
 
 ### v4 changes

@@ -682,6 +682,14 @@ function roadAt(along2) {
     acc += L;
   }
 }
+var POLES = [];
+var RSIGNS = [];
+for (let a = 30, k = 0; a < ROAD_LEN - 20; a += 45, k++) {
+  const p = roadAt(a), nx = Math.cos(p.yaw), nz = -Math.sin(p.yaw), farSet = Object.values(SPOTS).some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 14);
+  if (farSet) continue;
+  POLES.push({ x: p.x + nx * 7, z: p.z + nz * 7, yaw: p.yaw });
+  if (k % 5 === 2) RSIGNS.push({ x: p.x - nx * 6.4, z: p.z - nz * 6.4, yaw: p.yaw });
+}
 var near = (x, z, q, r) => Math.hypot(x - q.x, z - q.z) < r;
 function keepClear(x, z, m = 0) {
   if (inBounds(x, z) || inBounds(x + 6 + m, z) || inBounds(x - 6 - m, z) || inBounds(x, z + 6 + m) || inBounds(x, z - 6 - m) || Math.hypot(x, z) < 99) return true;
@@ -689,7 +697,7 @@ function keepClear(x, z, m = 0) {
   if (Math.abs(Math.abs(x) - 100) < 3.5 + m && z < -95 && z > -305) return true;
   if (FARMS.some((f) => Math.hypot(x - f[0], z - f[1]) < 17 + m)) return true;
   if (FIELDS.some((f) => Math.abs(x - f[0]) < f[2] + m && Math.abs(z - f[1]) < f[3] + m)) return true;
-  if (roadDist(x, z).d < ROAD_W / 2 + 3 + m) return true;
+  if (roadDist(x, z).d < ROAD_W / 2 + 6 + m) return true;
   for (const k in SPOTS) if (near(x, z, SPOTS[k], (k === "camp" ? 18 : k === "cabin" ? 9 : 12) + m)) return true;
   if (x > SITE.x0 - 8 - m && x < SITE.x1 + 8 + m && z > SITE.z0 - 8 - m && z < SITE.z1 + 14 + m) return true;
   return false;
@@ -759,9 +767,33 @@ function setPieces() {
     const at = (dx, dz) => [fx + dx * cs + dz * sn, fz - dx * sn + dz * cs], ab = (q, hx, hz, h) => BX(q[0], q[1], hx * c + hz * s, hx * s + hz * c, h);
     b.push(ab(at(0, 0), 4.5, 3.5, 6), ab(at(16, 4), 5, 7, 7), ab(at(-9, 8), 1.5, 1.5, 2.4));
   }
+  for (const q of POLES) b.push(BX(q.x, q.z, 0.2, 0.2, 99));
+  for (const q of RSIGNS) b.push(BX(q.x, q.z, 0.1, 0.1, 99));
   return b;
 }
 var SP = setPieces();
+var REGROW = 6;
+var treeKey = (cx, cz, i) => cx + "," + cz + "," + i;
+var CT = null;
+function setChopped(ct) {
+  CT = ct || null;
+}
+var isFelled = (key) => !!(CT && CT[key] != null);
+function nearChunkTree(seed, x, z, fx, fz, r = 2.9) {
+  const cx = Math.floor(x / CH), cz = Math.floor(z / CH);
+  let best = null, bd = 1e9;
+  for (let i = cx - 1; i <= cx + 1; i++) for (let j = cz - 1; j <= cz + 1; j++) chunk(seed, i, j).trees.forEach((t, k) => {
+    const dx = t[0] - x, dz = t[1] - z, d = Math.hypot(dx, dz);
+    if (d > r + TR[t[3]] * t[2] || d > 0.9 && (dx * fx + dz * fz) / d < 0.5) return;
+    const key = treeKey(i, j, k);
+    if (isFelled(key)) return;
+    if (d < bd) {
+      bd = d;
+      best = { key, x: t[0], z: t[1], s: t[2], t: t[3] };
+    }
+  });
+  return best;
+}
 function owObstacles(W, x, z, reach, fn) {
   for (const q of SP) if (x > q[0] - 1.5 - reach && x < q[1] + 1.5 + reach && z > q[2] - 1.5 - reach && z < q[3] + 1.5 + reach) fn(1, q[0], q[1], q[2], q[3], q[4]);
   if (inBounds(x, z) && Math.hypot(x, z) < 90) return;
@@ -774,7 +806,10 @@ function owObstacles(W, x, z, reach, fn) {
   else if (lz > CH - m) zs.push(cz + 1);
   for (const i of xs) for (const j of zs) {
     const c = chunk(W.seed | 0, i, j);
-    for (const t of c.trees) if (Math.abs(t[0] - x) < 2 + reach && Math.abs(t[1] - z) < 2 + reach) fn(0, t[0], t[1], TR[t[3]] * t[2], 0, 99);
+    c.trees.forEach((t, k) => {
+      if (isFelled(treeKey(i, j, k))) return;
+      if (Math.abs(t[0] - x) < 2 + reach && Math.abs(t[1] - z) < 2 + reach) fn(0, t[0], t[1], TR[t[3]] * t[2], 0, 99);
+    });
     for (const t of c.rocks) {
       const rr = RR[t[3]] * t[2];
       if (Math.abs(t[0] - x) < rr + 1.5 + reach && Math.abs(t[1] - z) < rr + 1.5 + reach) fn(0, t[0], t[1], rr, 0, t[3] === 3 ? 99 : rr * 1.1);
@@ -784,7 +819,7 @@ function owObstacles(W, x, z, reach, fn) {
 function owNotes() {
   const S2 = SPOTS;
   return [
-    { x: S2.crash.x + 1.8, z: S2.crash.z + 0.6, y: 0.05, ow: "crash", lead: 1, text: `A note in a dead man's jacket: "Harlow turned us away. We're heading for the Kessler research site up this road \u2014 they had a lab, a generator, maybe a cure. Dana is bitten. Hurry." The road runs on north-east.` },
+    { x: S2.crash.x + 1.8, z: S2.crash.z + 0.6, y: 0.05, ow: "crash", lead: 1, text: `A note in a dead man's jacket: "Harlow turned us away. We're heading for the Kessler research site up this road \u2014 they had a lab, a generator, maybe a cure. Dana is bitten. Hurry." The road runs on north.` },
     { x: S2.block.x + 1.5, z: S2.block.z + 1.4, y: 1.15, ow: "block", lead: 1, text: 'Clipboard on a barrier: "CHECKPOINT 4 \u2014 No civilian traffic past this point. All personnel report to KESSLER SITE." Someone scrawled: "THEY LEFT US HERE."' },
     { x: S2.camp.x + 0.8, z: S2.camp.z - 1.6, y: 0.05, ow: "camp", text: 'A diary by the cold fire: "Day 41. The raiders down the road took our fuel. Day 44. Something came out of the trees at night. We should have kept the fire small."' },
     { x: S2.cabin.x - 1.6, z: S2.cabin.z - 1.4, y: 0.78, ow: "cabin", lead: 1, text: `A hunter's map pinned to the cabin wall. The research site is circled in red ink, up the road past the checkpoint. Under it: "Gate code is with Dr. Kessler. Don't go at night."` },
@@ -1485,7 +1520,7 @@ function dialogue(W, S2, me, i, viaSlot) {
       o.push(['"Understood."', "met"]);
       return say(`"So you're Gus's new friend. I know what you grow. Nobody here cares \u2014 there's no law left. But you mind your own business, or you face this whole community. We hold together or we die. Clear?"`);
     }
-    if (!(tw.ow && tw.ow.lead)) o.push([`"What's up the road past town?"`, "road"]);
+    if (!(tw.ow && tw.ow.lead)) o.push([`"What's up the road north of town?"`, "road"]);
     if (!tw.own && tw.cash >= HOUSE_P) o.push([`Buy the empty house at the end of the street ($${HOUSE_P})`, "house"]);
     o.push(["Goodbye", "bye"]);
     return say(`"Keep your head down and your noise down. ${tw.own ? "Enjoy the house." : `The empty house at the north end is yours for $${HOUSE_P}, if you ever have it.`}"`);
@@ -2047,6 +2082,38 @@ var swingCost = (p, armed) => (armed ? 3.5 : 2) * (1 - 0.04 * S(p, "end"));
 var TIRED_SLOW = 1.4;
 var TIRED_DMG = 0.6;
 var isTired = (p, armed) => (p.st ?? 100) < swingCost(p, armed);
+var SKILL_KEYS = ["deal", "scav", "wood"];
+var SKILLS = { deal: { n: "Dealing", u: "baggies packed" }, scav: { n: "Scavenging", u: "containers searched" }, wood: { n: "Woodcutting", u: "trees felled" } };
+var SK_T = [0, 4, 10, 18, 28, 40, 55, 72, 92, 115, 140];
+var skillLv = (p, k) => {
+  const n = (p.sk && p.sk[k]) | 0;
+  let l = 0;
+  while (l < 10 && n >= SK_T[l + 1]) l++;
+  return l;
+};
+var skillNext = (p, k) => {
+  const l = skillLv(p, k);
+  return l >= 10 ? null : SK_T[l + 1];
+};
+var PERKS = [
+  { id: "packall", k: "deal", lv: 7, n: "Pack All", d: "Package every bud at the bench in one go" },
+  { id: "smooth", k: "deal", lv: 4, n: "Smooth Talker", d: "Hand-packing: the scale settles twice as fast" },
+  { id: "keeneye", k: "scav", lv: 4, n: "Keen Eye", d: "Kitchen cupboards hold baggies more often (55%)" },
+  { id: "packrat", k: "scav", lv: 8, n: "Pack Rat", d: "Crates and cars sometimes give one extra item" },
+  { id: "cleancut", k: "wood", lv: 3, n: "Clean Cuts", d: "Axe swings chop trees 15% faster" },
+  { id: "lumberjack", k: "wood", lv: 7, n: "Lumberjack", d: "Felled trees drop an extra log" }
+];
+var hasPerk = (p, id) => {
+  const q = PERKS.find((x) => x.id === id);
+  return !!q && skillLv(p, q.k) >= q.lv;
+};
+function useSkill(p, k, n = 1) {
+  p.sk = p.sk || {};
+  const l0 = skillLv(p, k);
+  p.sk[k] = (p.sk[k] | 0) + n;
+  const l1 = skillLv(p, k);
+  return l1 > l0 ? { lv: l1, perks: PERKS.filter((q) => q.k === k && q.lv > l0 && q.lv <= l1) } : null;
+}
 
 // src/build.js
 var CELL = 2;
@@ -2374,7 +2441,9 @@ function findInteractAll(W, S2, me) {
 }
 
 // src/minimap.js
-var FOG_N = 46;
+var FC = 10;
+var FW = Math.ceil((EDGE.x1 - EDGE.x0) / FC);
+var FH = Math.ceil((EDGE.z1 - EDGE.z0) / FC);
 var Minimap = class {
   constructor(canvas, full, isTouch2) {
     this.cv = canvas;
@@ -2393,27 +2462,82 @@ var Minimap = class {
     this.fog = null;
     this.fogT = 0;
     this.showFull = false;
+    this.fv = { x: 0, z: 0, half: 160, open: false };
+    const zoom = (f) => {
+      this.fv.half = Math.max(30, Math.min(1300, this.fv.half * f));
+      this.dirty = true;
+    };
+    const pan = (dx, dz) => {
+      this.fv.x += dx * this.fv.half;
+      this.fv.z += dz * this.fv.half;
+      this.dirty = true;
+    };
+    window.addEventListener("wheel", (e) => {
+      if (!this.showFull) return;
+      e.preventDefault();
+      zoom(e.deltaY > 0 ? 1.18 : 1 / 1.18);
+    }, { passive: false });
+    window.addEventListener("keydown", (e) => {
+      if (!this.showFull) return;
+      const k = e.key;
+      if (k === "=" || k === "+") zoom(1 / 1.25);
+      else if (k === "-" || k === "_") zoom(1.25);
+      else if (k === "ArrowUp") pan(0, -0.2);
+      else if (k === "ArrowDown") pan(0, 0.2);
+      else if (k === "ArrowLeft") pan(-0.2, 0);
+      else if (k === "ArrowRight") pan(0.2, 0);
+      else if (k === "Home" || k === "0") this.fv.open = false;
+      else return;
+      e.preventDefault();
+    });
+    full.style.pointerEvents = "auto";
+    let drag = null;
+    full.addEventListener("pointerdown", (e) => {
+      drag = { x: e.clientX, y: e.clientY };
+      full.setPointerCapture(e.pointerId);
+    });
+    full.addEventListener("pointermove", (e) => {
+      if (!drag) return;
+      const r = full.getBoundingClientRect(), mpp = this.fv.half * 2 / r.width;
+      this.fv.x -= (e.clientX - drag.x) * mpp;
+      this.fv.z -= (e.clientY - drag.y) * mpp;
+      drag = { x: e.clientX, y: e.clientY };
+      this.dirty = true;
+    });
+    full.addEventListener("pointerup", () => {
+      drag = null;
+    });
+    this.fogCv = document.createElement("canvas");
+    this.fogCv.width = FW;
+    this.fogCv.height = FH;
+    this.fogX = this.fogCv.getContext("2d");
   }
   setWorld(W) {
     this.W = W;
-    this.fog = new Uint8Array(FOG_N * FOG_N);
+    this.fog = new Uint8Array(FW * FH);
     this.fogT = 0;
+    this.fogX.fillStyle = "#000";
+    this.fogX.clearRect(0, 0, FW, FH);
+    this.fogX.fillRect(0, 0, FW, FH);
     this.trees = W.loot.map((n, i) => n.kind === "tree" ? { i, x: n.x, z: n.z } : null).filter(Boolean);
     this.rocks = W.rocks.filter((r) => !r.hidden);
   }
   cell(x, z) {
-    const R2 = CFG.WORLD_R, u = Math.floor((x + R2) / (2 * R2) * FOG_N), v = Math.floor((z + R2) / (2 * R2) * FOG_N);
-    return u < 0 || v < 0 || u >= FOG_N || v >= FOG_N ? -1 : v * FOG_N + u;
+    const u = Math.floor((x - EDGE.x0) / FC), v = Math.floor((z - EDGE.z0) / FC);
+    return u < 0 || v < 0 || u >= FW || v >= FH ? -1 : v * FW + u;
   }
   seen(x, z) {
     const c = this.cell(x, z);
     return c >= 0 && this.fog[c] === 1;
   }
   reveal(me) {
-    const R2 = CFG.WORLD_R, cs = 2 * R2 / FOG_N, rr = 30;
-    for (let v = 0; v < FOG_N; v++) for (let u = 0; u < FOG_N; u++) {
-      const x = -R2 + (u + 0.5) * cs, z = -R2 + (v + 0.5) * cs;
-      if (Math.hypot(x - me.x, z - me.z) < rr) this.fog[v * FOG_N + u] = 1;
+    const rr = 40, u0 = Math.floor((me.x - rr - EDGE.x0) / FC), u1 = Math.floor((me.x + rr - EDGE.x0) / FC), v0 = Math.floor((me.z - rr - EDGE.z0) / FC), v1 = Math.floor((me.z + rr - EDGE.z0) / FC);
+    for (let v = Math.max(0, v0); v <= Math.min(FH - 1, v1); v++) for (let u = Math.max(0, u0); u <= Math.min(FW - 1, u1); u++) {
+      const x = EDGE.x0 + (u + 0.5) * FC, z = EDGE.z0 + (v + 0.5) * FC, i = v * FW + u;
+      if (!this.fog[i] && Math.hypot(x - me.x, z - me.z) < rr) {
+        this.fog[i] = 1;
+        this.fogX.clearRect(u, v, 1, 1);
+      }
     }
   }
   toggleRot() {
@@ -2432,6 +2556,13 @@ var Minimap = class {
     this.t = 0.05;
     this.dirty = false;
     this.draw(this.ctx, this.size, S2, me, myId, { mini: true });
+    if (this.showFull && !this.fv.open) {
+      this.fv.open = true;
+      this.fv.x = me.x;
+      this.fv.z = me.z;
+      this.fv.half = 160;
+    }
+    if (!this.showFull) this.fv.open = false;
     if (this.showFull) this.draw(this.fctx, this.fcv.width, S2, me, myId, { mini: false });
     this.fcv.parentElement.classList.toggle("hidden", !this.showFull);
   }
@@ -2439,9 +2570,9 @@ var Minimap = class {
   draw(ctx, px, S2, me, myId, o) {
     const W = this.W, mini = o.mini, R2 = CFG.WORLD_R, k = mini ? this.dpr : 1, size = px * (mini ? this.dpr : 1) / (mini ? 1 : 1);
     const full = !mini, pxs = mini ? this.cv.width : this.fcv.width, c = pxs / 2;
-    const twn = full && me.z < -95, scale = mini ? pxs / 2 / this.view : pxs / 2 / (twn ? 105 : R2 + 6);
+    const scale = mini ? pxs / 2 / this.view : pxs / 2 / this.fv.half;
     const rotate = mini && this.rot, yaw = me.yaw, cs = Math.cos(yaw), sn = Math.sin(yaw);
-    const cx0 = full ? 0 : me.x, cz0 = full ? twn ? -165 : 0 : me.z;
+    const cx0 = full ? this.fv.x : me.x, cz0 = full ? this.fv.z : me.z;
     const P = (x, z) => {
       const dx = x - cx0, dz = z - cz0;
       if (rotate) return [c + (dx * cs - dz * sn) * scale, c + (dx * sn + dz * cs) * scale];
@@ -2455,34 +2586,45 @@ var Minimap = class {
     ctx.clip();
     ctx.fillStyle = full ? "#0a0f0c" : "#16211a";
     ctx.fillRect(0, 0, pxs, pxs);
-    {
-      const [wx, wz] = P(0, 0);
-      ctx.beginPath();
-      ctx.arc(wx, wz, R2 * scale, 0, 6.2832);
-      ctx.fillStyle = "#1f2e22";
-      ctx.fill();
-      ctx.lineWidth = 1.5 * k;
-      ctx.strokeStyle = "#7a3b30";
-      ctx.stroke();
+    const WT = () => {
+      ctx.translate(c, c);
+      if (rotate) ctx.rotate(Math.atan2(sn, cs));
+      ctx.scale(scale, scale);
+      ctx.translate(-cx0, -cz0);
+    };
+    ctx.save();
+    WT();
+    ctx.fillStyle = "#1f2e22";
+    ctx.fillRect(EDGE.x0, EDGE.z0, EDGE.x1 - EDGE.x0, EDGE.z1 - EDGE.z0);
+    ctx.strokeStyle = "#5a4a3a";
+    ctx.lineWidth = ROAD_W + 3;
+    ctx.lineJoin = ctx.lineCap = "round";
+    ctx.beginPath();
+    ROAD.forEach(([x, z], i) => i ? ctx.lineTo(x, z) : ctx.moveTo(x, z));
+    ctx.stroke();
+    ctx.strokeStyle = "#4a4a4a";
+    ctx.lineWidth = ROAD_W;
+    ctx.stroke();
+    ctx.fillStyle = "#6a5a4a";
+    for (const [fx, fz] of FARMS) ctx.fillRect(fx - 5, fz - 4, 10, 8);
+    ctx.fillStyle = "#7a7a76";
+    ctx.fillRect(SITE.x0, SITE.z0, SITE.x1 - SITE.x0, SITE.z1 - SITE.z0);
+    ctx.strokeStyle = "#b0b0a8";
+    ctx.lineWidth = 1.2;
+    ctx.strokeRect(SITE.x0, SITE.z0, SITE.x1 - SITE.x0, SITE.z1 - SITE.z0);
+    ctx.fillStyle = "#8a6a4a";
+    for (const k2 in SPOTS) {
+      const q = SPOTS[k2];
+      ctx.fillRect(q.x - 3, q.z - 3, 6, 6);
     }
-    {
-      const cs2 = 2 * R2 / FOG_N * scale;
-      ctx.fillStyle = full ? "#05080a" : "#0c120e99";
-      const lim = mini ? this.view + 8 : 1e9;
-      for (let v = 0; v < FOG_N; v++) for (let u = 0; u < FOG_N; u++) {
-        if (this.fog[v * FOG_N + u]) continue;
-        const wx = -R2 + u * (2 * R2 / FOG_N), wz = -R2 + v * (2 * R2 / FOG_N);
-        if (mini && Math.hypot(wx + R2 / FOG_N - me.x, wz + R2 / FOG_N - me.z) > lim) continue;
-        const [a, b] = P(wx + R2 / FOG_N, wz + R2 / FOG_N);
-        if (rotate) {
-          ctx.save();
-          ctx.translate(a, b);
-          ctx.rotate(Math.atan2(sn, cs));
-          ctx.fillRect(-cs2 / 2 - 0.5, -cs2 / 2 - 0.5, cs2 + 1, cs2 + 1);
-          ctx.restore();
-        } else ctx.fillRect(a - cs2 / 2 - 0.5, b - cs2 / 2 - 0.5, cs2 + 1, cs2 + 1);
-      }
+    if (mini) {
+      ctx.fillStyle = "#3f7a48";
+      const ccx = Math.floor(me.x / CH), ccz = Math.floor(me.z / CH);
+      for (let i = ccx - 1; i <= ccx + 1; i++) for (let j = ccz - 1; j <= ccz + 1; j++) chunk(W.seed | 0, i, j).trees.forEach((t, q) => {
+        if (Math.abs(t[0] - me.x) < this.view + 6 && Math.abs(t[1] - me.z) < this.view + 6 && !isFelled(treeKey(i, j, q))) ctx.fillRect(t[0] - 0.9, t[1] - 0.9, 1.8, 1.8);
+      });
     }
+    ctx.restore();
     const vis = (x, z) => !mini || Math.hypot(x - me.x, z - me.z) < this.view + 6;
     ctx.fillStyle = "#6d756f99";
     for (const r of this.rocks) if (vis(r.x, r.z) && (mini || this.seen(r.x, r.z))) {
@@ -2512,6 +2654,12 @@ var Minimap = class {
       ctx.strokeRect(-b.w / 2 * scale, -b.d / 2 * scale, b.w * scale, b.d * scale);
       ctx.restore();
     }
+    ctx.save();
+    WT();
+    ctx.imageSmoothingEnabled = true;
+    ctx.globalAlpha = full ? 1 : 0.75;
+    ctx.drawImage(this.fogCv, EDGE.x0, EDGE.z0, FW * FC, FH * FC);
+    ctx.restore();
     if (W.tw) {
       const poly = (x0, z0, x1, z1, fill, stroke) => {
         ctx.beginPath();
@@ -2762,6 +2910,9 @@ var Minimap = class {
       ctx.font = "700 15px system-ui,sans-serif";
       ctx.textAlign = "center";
       ctx.fillText("N", c, 18);
+      ctx.font = "12px system-ui,sans-serif";
+      ctx.fillStyle = "#cfd3d6";
+      ctx.fillText(`${Math.round(this.fv.half * 2)} m across \xB7 wheel or +/\u2212 zoom \xB7 drag or arrow keys pan \xB7 0 re-centre`, c, pxs - 10);
     }
     ctx.restore();
   }
@@ -3095,16 +3246,17 @@ function townUse(sim, p, tg) {
     tw.packN = (tw.packN | 0) + 1;
     if (tw.st === 5 && !p.inv.bud && !p.inv.budh) tw.st = 6;
     sim.emit("craft", p.x, p.z, p.id);
-    if (tw.packN === 6) toast('You have the hang of it: "Package all" is now unlocked at the bench.');
+    sim.skill(p, "deal");
     return;
   }
   if (a === "pack") {
     if (!near2(p, T2.table, 2.6)) return;
-    if ((tw.packN | 0) < 6) return toast("Pack a few baggies by hand first (E at the bench).");
+    if (!hasPerk(p, "packall")) return toast("Pack All is a perk: reach Dealing 7/10 by packing baggies by hand (K shows your skills).");
     if (p.inv.bud < 1 && !p.inv.budh) return toast("Nothing to package. Bring buds here.");
     const tot = p.inv.bud * 2 + (p.inv.budh | 0), k = Math.min(tot, ebags(tw, p));
     if (k <= 0) return toast("Out of empty baggies. Search kitchen cupboards in homes for more.");
     useEbag(tw, p, k);
+    sim.skill(p, "deal", k);
     const rem = tot - k;
     p.inv.bud = Math.floor(rem / 2);
     p.inv.budh = rem % 2;
@@ -3218,7 +3370,7 @@ function talk(sim, p, n, a) {
       break;
     case "road":
       owState(tw).lead = 1;
-      say('"The road out east? It runs up to the old Kessler research site. Army went up there. Nobody came back down. Raiders sit on the road now." (Waypoint added)');
+      say('"The road past town? It leaves by the east wall and runs north, up to the old Kessler research site. Army went up there. Nobody came back down. Raiders sit on the road now." (Waypoint added)');
       break;
     case "met":
       tw.met = 1;
@@ -3679,6 +3831,7 @@ function newPlayer(id, name, W) {
     lv: 1,
     pts: 0,
     stats: STAT_KEYS.map(() => 0),
+    sk: {},
     y: 0,
     rp: 0,
     // ax: 0 fists, 1 axe, 2 steel axe
@@ -3770,6 +3923,7 @@ var Sim = class {
       p.lv = 1;
       p.pts = 0;
       p.stats = STAT_KEYS.map(() => 0);
+      p.sk = {};
       p.rp = 0;
     }
     const rs2 = p.rp && S2.structs.get(p.rp);
@@ -3798,6 +3952,42 @@ var Sim = class {
     p.inv = Object.fromEntries(ITEMS.map((k) => [k, keep[k] || (full && k === "food" ? 1 : 0)]));
   }
   // ------------------------------------------------------------------ XP / levels
+  /** v7.5: chop a Kenney chunk tree in the open world (same HP/damage/logs as town trees; felled state persisted in S.tw.ct) */
+  chopOW(p, fx, fz, wl, dm) {
+    const S2 = this.S, tw = S2.tw;
+    if (!tw) return;
+    tw.ct = tw.ct || {};
+    setChopped(tw.ct);
+    const t = nearChunkTree(this.W.seed | 0, p.x, p.z, fx, fz);
+    if (!t) return;
+    this.cth = this.cth || /* @__PURE__ */ new Map();
+    const hp = (this.cth.get(t.key) ?? CFG.TREE_HP * (0.8 + t.s * 0.3)) - CFG.TREE_DMG[Math.min(2, wl)] * chopMul(p) * dm * (hasPerk(p, "cleancut") ? 1.15 : 1);
+    if (!wl && (p.noAxeMsg || 0) <= 0) {
+      this.toast(p.id, p.ax ? "Select the axe (key 1) to chop properly" : "Bare hands barely scratch the bark \u2014 find an axe!");
+      p.noAxeMsg = 6;
+    }
+    this.emit("chop", t.x, t.z, -1, p.id);
+    if (hp > 1e-6) {
+      this.cth.set(t.key, hp);
+      return;
+    }
+    this.cth.delete(t.key);
+    tw.ct[t.key] = dayOf(S2.time ?? 0);
+    S2.lootVer++;
+    this.xp(p, XP.tree, t.x, t.z);
+    this.skill(p, "wood");
+    const ang = Math.atan2(t.x - p.x, t.z - p.z), ux = Math.sin(ang), uz = Math.cos(ang);
+    this.emit("cfell", t.x, t.z, t.t, Math.round(ang * 100) / 100);
+    for (let k = 0; k < (hasPerk(p, "lumberjack") ? 4 : 3); k++) {
+      const L = 1.4 + k * 1.5, id = S2.nextDrop++;
+      S2.drops.set(id, { x: t.x + ux * L + (Math.random() - 0.5) * 0.7, z: t.z + uz * L + (Math.random() - 0.5) * 0.7 });
+    }
+  }
+  /** v7.5: count one use of a skill; toast level-ups and newly unlocked perks */
+  skill(p, k, n = 1) {
+    const r = useSkill(p, k, n);
+    if (r) this.toast(p.id, `${SKILLS[k].n} ${r.lv}/10${r.perks.length ? " \u2014 perk unlocked: " + r.perks.map((q) => q.n).join(", ") : ""}`);
+  }
   xp(p, n, x = p.x, z = p.z) {
     if (!p.alive || n <= 0 || p.lv >= MAX_LV) return;
     p.xp += n;
@@ -3895,8 +4085,8 @@ var Sim = class {
         best = i;
       }
     }
-    if (best < 0) return;
-    const n = W.loot[best], dmg = CFG.TREE_DMG[Math.min(2, wl)] * chopMul(p) * dm;
+    if (best < 0) return this.chopOW(p, fx, fz, wl, dm);
+    const n = W.loot[best], dmg = CFG.TREE_DMG[Math.min(2, wl)] * chopMul(p) * dm * (hasPerk(p, "cleancut") ? 1.15 : 1);
     if (!wl && (p.noAxeMsg || 0) <= 0) {
       this.toast(p.id, p.ax ? "Select the axe (key 1) to chop properly" : "Bare hands barely scratch the bark \u2014 find an axe!");
       p.noAxeMsg = 6;
@@ -3908,9 +4098,10 @@ var Sim = class {
     S2.alive[best] = 0;
     S2.lootVer++;
     this.xp(p, XP.tree, n.x, n.z);
+    this.skill(p, "wood");
     const dx = n.x - p.x, dz = n.z - p.z, ang = Math.atan2(dx, dz), ux = Math.sin(ang), uz = Math.cos(ang);
     this.emit("fell", n.x, n.z, best, Math.round(ang * 100) / 100);
-    for (let k = 0; k < 3; k++) {
+    for (let k = 0; k < (hasPerk(p, "lumberjack") ? 4 : 3); k++) {
       const L = 1.4 + k * 1.5 + n.s * 0.3, jx = (Math.random() - 0.5) * 0.7, jz = (Math.random() - 0.5) * 0.7;
       const id = S2.nextDrop++;
       S2.drops.set(id, { x: n.x + ux * L + jx, z: n.z + uz * L + jz });
@@ -4085,6 +4276,8 @@ var Sim = class {
       S2.alive[tg.i] = 0;
       S2.lootVer++;
       this.xp(p, XP.scavenge, n.x, n.z);
+      this.skill(p, "scav");
+      if ((n.kind === "crate" || n.kind === "car") && hasPerk(p, "packrat") && Math.random() < 0.35) this.give(p, Math.random() < 0.5 ? "scrap" : "cloth", 1);
       const r = Math.random(), inv0 = { ...p.inv };
       if (n.kind === "crate") {
         if (r < 0.4) this.give(p, "food", 1);
@@ -4102,7 +4295,7 @@ var Sim = class {
         this.give(p, "food", 1 + (r < 0.3 ? 1 : 0));
         if (r > 0.7) this.give(p, "cloth", 1);
         const r22 = Math.random();
-        if (r22 < 0.4) {
+        if (r22 < (hasPerk(p, "keeneye") ? 0.55 : 0.4)) {
           const k = 3 + Math.floor(Math.random() * 6);
           p.inv.ebag = (p.inv.ebag | 0) + k;
           this.toast(p.id, `+${k} empty baggies (a box of sandwich bags)`);
@@ -4320,6 +4513,17 @@ var Sim = class {
     const S2 = this.S, W = this.W;
     if (S2.phase !== "playing") return;
     S2.time += dt;
+    if (S2.tw) {
+      setChopped(S2.tw.ct);
+      if (S2.tw.ct && (this.ctT = (this.ctT || 0) + dt) > 10) {
+        this.ctT = 0;
+        const d = dayOf(S2.time);
+        for (const k in S2.tw.ct) if (d - S2.tw.ct[k] >= REGROW) {
+          delete S2.tw.ct[k];
+          S2.lootVer++;
+        }
+      }
+    }
     const D = daylight(todOf(S2.time));
     S2.night = D < 0.35;
     if (S2.night && !S2.wasNight) {
@@ -5224,6 +5428,7 @@ function encodeSnapshot(S2, full, lastLootVer, evs, lastSver = -1) {
       lv: p.lv,
       pt: p.pts,
       sa: p.stats,
+      kk: p.sk,
       rp: p.rp,
       cr: p.cr ? 1 : 0
     })),
@@ -5289,6 +5494,7 @@ function applySnapshot(S2, W, m, myId, onPlayerNew, onEvent) {
     p.lv = e.lv;
     p.pts = e.pt;
     p.stats = e.sa;
+    p.sk = e.kk || {};
     p.rp = e.rp;
     p.name = e.n;
     p.hp = e.h;
@@ -10601,11 +10807,12 @@ function buildOpenWorld(M, W, T2, parent, scene) {
       win.position.set(T3.x + 3, 5, T3.z - 0.9);
       sp.add(win);
     }
-    for (let a = 30, k = 0; a < ROAD_LEN - 20; a += 45, k++) {
-      const p = roadAt(a), nx = Math.cos(p.yaw), nz = -Math.sin(p.yaw);
-      place("road_electricity_pole", p.x + nx * 6.5, p.z + nz * 6.5, p.yaw, "h", 8.5) || box(0.25, 8, 0.25, 5917242, p.x + nx * 6.5, 4, p.z + nz * 6.5);
-      if (k % 5 === 2) place("road_road_sign_street", p.x - nx * 5.5, p.z - nz * 5.5, p.yaw, "h", 2.6);
+    for (const q of POLES) {
+      const m = place("road_electricity_pole", q.x, q.z, q.yaw + Math.PI / 2, "h", 8.5);
+      if (m) m.scale.x *= 0.38;
+      else box(0.25, 8, 0.25, 5917242, q.x, 4, q.z);
     }
+    for (const q of RSIGNS) place("road_road_sign_street", q.x, q.z, q.yaw, "h", 2.6);
   }
   buildSetPieces();
   const lootG = new THREE7.Group();
@@ -10668,8 +10875,10 @@ function buildOpenWorld(M, W, T2, parent, scene) {
       const c = chunk(W.seed | 0, ccx + i, ccz + j);
       for (const k of kinds) {
         const list = c[k.list];
-        for (const q of list) {
+        for (let qi = 0; qi < list.length; qi++) {
+          const q = list[qi];
           if (q[3] !== k.t) continue;
+          if (k.list === "trees" && isFelled(treeKey(ccx + i, ccz + j, qi))) continue;
           const cap = k.parts[0].im.instanceMatrix.count;
           if (k.n >= cap) break;
           const s = k.sc * q[2];
@@ -10754,9 +10963,21 @@ function buildOpenWorld(M, W, T2, parent, scene) {
       } else v.group.visible = m[3] > 0;
     });
   }
+  const falls = [];
+  function fall(x, z, t, ang) {
+    const m = kitModel(TREE_T[t] || TREE_T[0], "h", TREE_H[t] || 9, SH);
+    if (!m) return;
+    const g = new THREE7.Group();
+    g.position.set(x, 0, z);
+    g.rotation.y = ang;
+    g.add(m);
+    root.add(g);
+    falls.push({ g, t: 0 });
+  }
   return {
     root,
     gang,
+    fall,
     get fills() {
       return fillN;
     },
@@ -10774,6 +10995,21 @@ function buildOpenWorld(M, W, T2, parent, scene) {
         lastKey = "";
       }
       swapCars(lootViews);
+      if (S2.tw) setChopped(S2.tw.ct);
+      if (S2.lootVer !== this.lv0) {
+        this.lv0 = S2.lootVer;
+        lastKey = "";
+      }
+      for (let i = falls.length - 1; i >= 0; i--) {
+        const f = falls[i];
+        f.t += dt;
+        f.g.rotation.x = Math.min(Math.PI / 2, f.t * f.t * 1.6);
+        if (f.t > 2) f.g.position.y = -(f.t - 2) * 2;
+        if (f.t > 3.5) {
+          root.remove(f.g);
+          falls.splice(i, 1);
+        }
+      }
       if (cam) {
         const ccx = Math.floor(cam.x / CH), ccz = Math.floor(cam.z / CH), key = ccx + "," + ccz;
         if (key !== lastKey) {
@@ -10922,13 +11158,20 @@ function swapLoot(g, n, i, bb, SH, isBat) {
     const fd = n.fd || [0, 1], f = FURN[k];
     closed = boxModel(g, f[0], X0 + 0.02, X1 - 0.02, Z0 + 0.02, Z1 - 0.02, n.h || Hh, fd[0], fd[1], { SH, unit: f[1] });
     if (!closed) return false;
-    const pivots = procs.filter((c) => c.isGroup);
     procs.forEach((c) => {
       c.visible = false;
     });
+    const dark = /* @__PURE__ */ new Map();
+    closed.traverse((m) => {
+      if (m.isMesh) {
+        const d = m.material.clone();
+        d.color = d.color.clone().multiplyScalar(0.62);
+        if (d.emissive) d.emissive.setRGB(0, 0, 0);
+        dark.set(m, [m.material, d]);
+      }
+    });
     g.userData.setOpen = (o) => {
-      orig && orig(o);
-      for (const p of pivots) p.visible = !!o;
+      for (const [m, [a, b]] of dark) m.material = o ? b : a;
     };
     return true;
   } else return false;
@@ -14912,7 +15155,7 @@ function makeMotes(count) {
   return { pts, u };
 }
 var GradeShader = {
-  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVig: { value: 0.55 }, uGrain: { value: 0.04 }, uCA: { value: 12e-4 }, uSat: { value: 0.8 }, uHurt: { value: 0 }, uCon: { value: 1.08 }, uTint: { value: new THREE13.Vector3(1.02, 1, 0.93) }, uRes: { value: new THREE13.Vector2(1, 1) } },
+  uniforms: { tDiffuse: { value: null }, uTime: { value: 0 }, uVig: { value: 0 }, uGrain: { value: 0 }, uCA: { value: 0 }, uSat: { value: 0.8 }, uHurt: { value: 0 }, uCon: { value: 1.08 }, uTint: { value: new THREE13.Vector3(1.02, 1, 0.93) }, uRes: { value: new THREE13.Vector2(1, 1) } },
   vertexShader: `varying vec2 vUv; void main(){ vUv=uv; gl_Position=projectionMatrix*modelViewMatrix*vec4(position,1.); }`,
   fragmentShader: `uniform sampler2D tDiffuse; uniform float uTime,uVig,uGrain,uCA,uSat,uHurt,uCon; uniform vec3 uTint; uniform vec2 uRes; varying vec2 vUv;
     float hash(vec2 p){ p=fract(p*vec2(443.897,441.423)); p+=dot(p,p+19.19); return fract(p.x*p.y); }
@@ -14924,7 +15167,6 @@ var GradeShader = {
       c = (c - 0.18) * uCon + 0.18; c = max(c, 0.0);
       c *= mix(vec3(0.93,0.98,1.0), uTint, smoothstep(0.05, 0.6, l));
       c *= 1.0 - smoothstep(0.12, 0.62, r2) * uVig;
-      c += (hash(vUv*uRes + uTime) - 0.5) * uGrain * (0.4 + 0.6*(1.0-clamp(l,0.,1.)));
       c = mix(c, c*vec3(1.6,0.35,0.3), uHurt*smoothstep(0.05,0.5,r2)*0.9);
       gl_FragColor = vec4(c, 1.);
     }`
@@ -14948,7 +15190,7 @@ function makePost(renderer, scene, camera, vmScene, vmCam, w, h, pr, opt = {}) {
   vm.clear = false;
   vm.clearDepth = true;
   composer.addPass(vm);
-  const bloom = new UnrealBloomPass(new THREE13.Vector2(opt.half ? w / 2 : w, opt.half ? h / 2 : h), 0.45, 0.6, 0.9);
+  const bloom = new UnrealBloomPass(new THREE13.Vector2(opt.half ? w / 2 : w, opt.half ? h / 2 : h), 0.2, 0.4, 0.95);
   composer.addPass(bloom);
   const grade = new ShaderPass(GradeShader);
   composer.addPass(grade);
@@ -16911,10 +17153,10 @@ var View = class {
     if (this.post) {
       const g = this.post.grade.uniforms;
       g.uTime.value = time * 37.1 % 100;
-      g.uVig.value = 0.5 + night * 0.15;
+      g.uVig.value = 0;
       g.uSat.value = 0.8 - rain * 0.15;
-      this.post.bloom.strength = 0.32 + night * 0.35 + dusk * 0.12;
-      this.post.bloom.threshold = 0.82 - night * 0.18;
+      this.post.bloom.strength = 0.22 - night * 0.14 + dusk * 0.03;
+      this.post.bloom.threshold = 0.9 + night * 0.06;
     }
     this.vig(Ls, rain);
     this.render();
@@ -16933,8 +17175,10 @@ var View = class {
         this.kick = 1;
         this.kickDir = Math.random() < 0.5 ? -1 : 1;
       }
+    } else if (type === "cfell") {
+      if (this.owv && this.owv.fall) this.owv.fall(x, z, a, b);
     } else if (type === "chop") {
-      this.shakes.set(a, { t: 0, ph: Math.random() * 6.28 });
+      if (a >= 0) this.shakes.set(a, { t: 0, ph: Math.random() * 6.28 });
       this.chips(x, 1 + Math.random() * 0.9, z, this.tier.particles > 300 ? 12 : 5);
       if (b === myId) {
         this.kick = 0.85;
@@ -18308,6 +18552,7 @@ var GameAudio = class {
         this.chop(x, z);
         break;
       case "fell":
+      case "cfell":
         this.treeFall(x, z);
         break;
       case "board":
@@ -18994,7 +19239,7 @@ var PackGame = class {
     this.last = now;
     this.t += dt;
     if (this.state === "weigh") {
-      this.wt += dt;
+      this.wt += dt * (hasPerk(this.g.me, "smooth") ? 2 : 1);
       if (this.wt > 1.1) this.state = "ready";
     }
     if (this.state === "slide") {
@@ -19079,7 +19324,7 @@ var PackGame = class {
     if (h.textContent !== hint) h.textContent = hint;
     this.el.querySelector("#pkOut").style.display = this.state === "weigh" || this.state === "ready" ? "" : "none";
     this.el.querySelector("#pkSeal").style.display = this.state === "ready" ? "" : "none";
-    this.el.querySelector("#pkAll").style.display = tw && (tw.packN | 0) >= 6 && n > 0 ? "" : "none";
+    this.el.querySelector("#pkAll").style.display = tw && hasPerk(this.g.me, "packall") && n > 0 ? "" : "none";
   }
   bud(cx, cy, r, s) {
     const x = this.x;
@@ -19139,7 +19384,7 @@ function saveGame(seed, S2, me) {
     tw: { ...S2.tw, vis: [] },
     nextSid: S2.nextSid,
     st: [...S2.structs.values()].map((s) => [s.id, s.t, s.x, s.z, s.r, s.tier, Math.round(s.hp), s.open ? 1 : 0, s.own, s.c || 0]),
-    me: { x: me.x, z: me.z, yaw: me.yaw, hp: me.hp, hu: me.hu, st: me.st, inv: ITEMS.map((k) => me.inv[k] | 0), ax: me.ax, xp: me.xp, lv: me.lv, pts: me.pts, stats: me.stats, rp: me.rp }
+    me: { x: me.x, z: me.z, yaw: me.yaw, hp: me.hp, hu: me.hu, st: me.st, inv: ITEMS.map((k) => me.inv[k] | 0), ax: me.ax, xp: me.xp, lv: me.lv, pts: me.pts, stats: me.stats, sk: me.sk || {}, rp: me.rp }
   };
   try {
     localStorage.setItem(KEY, JSON.stringify(d));
@@ -19187,7 +19432,7 @@ function applySave(sim, me, d, snapPlace2) {
   for (const id of S2.structs.keys()) S2.nextSid = Math.max(S2.nextSid, id + 1);
   migrateSlots(sim.W, S2);
   const m = d.me;
-  Object.assign(me, { x: m.x, z: m.z, yaw: m.yaw, hp: m.hp, hu: m.hu, st: m.st, ax: m.ax, xp: m.xp, lv: m.lv, pts: m.pts, stats: m.stats, rp: m.rp });
+  Object.assign(me, { x: m.x, z: m.z, yaw: m.yaw, hp: m.hp, hu: m.hu, st: m.st, ax: m.ax, xp: m.xp, lv: m.lv, pts: m.pts, stats: m.stats, sk: m.sk || {}, rp: m.rp });
   ITEMS.forEach((k, i) => {
     me.inv[k] = m.inv[i] | 0;
   });
@@ -19267,6 +19512,7 @@ var Game = class {
       if (document.hidden) this.advance(performance.now());
     }, 250);
     window.__game = this;
+    this.OW_roadAt = roadAt;
   }
   // ------------------------------------------------------------------ menu
   bindMenu() {
@@ -20251,14 +20497,17 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
         el.onclick = () => items[i].go();
       });
     } else if (this.uiMenu === "char") {
-      const sig = [me.lv, me.xp, me.pts, me.stats.join("")].join("|");
+      const sig = [me.lv, me.xp, me.pts, me.stats.join(""), JSON.stringify(me.sk || {})].join("|");
       if (sig === this.menuSig) return;
       this.menuSig = sig;
       $3("csSub").innerHTML = `Level <b style="color:var(--acc)">${me.lv}</b>${me.lv < MAX_LV ? ` &middot; ${me.xp}/${xpNeed(me.lv)} XP to next` : " (max)"} &middot; <b style="color:#7fd0ff">${me.pts}</b> unspent point${me.pts === 1 ? "" : "s"}`;
       $3("csRows").innerHTML = STAT_KEYS.map((k, i) => {
         const r = me.stats[i], d = STATS[k];
         return `<div class="srow"><span class="nm">${d.n}</span><span class="pips">${"\u25A0".repeat(r)}${"\u25A1".repeat(STAT_MAX - r)}</span><span class="ds">${d.d(r)}${r < STAT_MAX ? `<br><span style="color:#7fd0ff">next: ${d.d(r + 1)}</span>` : ""}</span><button data-k="${k}" ${me.pts > 0 && r < STAT_MAX ? "" : "disabled"} title="Spend a point (key ${i + 1})">+</button></div>`;
-      }).join("") + '<p style="color:var(--dim);font-size:12px">XP: zombie kills, chopping trees, scavenging, crafting, building, and surviving nights. Keys 1\u20136 spend a point on that stat.</p>';
+      }).join("") + '<p style="color:var(--dim);font-size:12px">XP: zombie kills, chopping trees, scavenging, crafting, building, and surviving nights. Keys 1\u20136 spend a point on that stat.</p><h3 style="margin:10px 0 4px">Skills &amp; perks</h3><p style="color:var(--dim);font-size:12px;margin:0 0 6px">Skills rise by doing; perks unlock at skill levels.</p>' + SKILL_KEYS.map((k) => {
+        const l = skillLv(me, k), nx = skillNext(me, k), c = (me.sk && me.sk[k]) | 0;
+        return `<div class="srow"><span class="nm">${SKILLS[k].n}</span><span class="pips">${"\u25A0".repeat(l)}${"\u25A1".repeat(10 - l)}</span><span class="ds">${l}/10 \xB7 ${c} ${SKILLS[k].u}${nx ? ` (next level at ${nx})` : ""}<br>${PERKS.filter((q) => q.k === k).map((q) => `<span style="color:${l >= q.lv ? "#9fe08a" : "var(--dim)"}">${l >= q.lv ? "\u2714" : "\u{1F512}"} <b>${q.n}</b> (${q.lv}/10): ${q.d}</span>`).join("<br>")}</span></div>`;
+      }).join("");
       for (const b of $3("csRows").querySelectorAll("button")) b.onclick = () => {
         if (!b.disabled) {
           this.act("stat", { s: b.dataset.k });
