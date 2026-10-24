@@ -7,6 +7,29 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.6 — Vance's hideout, inside the Kessler lab, Carla's gun shop (Oct 24, 2026)
+- **The research site gate** now has an intercom (E). Dr. Kessler won't open up while Vance's gang watches the road, and she tells you where their camp is.
+- **Vance's hideout** is a fortified camp in the old quarry, west of the road. It has a scrap fence, a watchtower, tents, a campfire, fuel drums, eight raiders and **Vance**, the boss (300 HP, hits hard). It only appears on your map once you've earned it, in one of three ways: Kessler tells you about it, you find the order on the road-gang boss, or you stumble on it yourself.
+- **Three ways to deal with the gang:**
+  - **Raid:** kill Vance and the rest flee.
+  - **Sneak:** crouch, go at night, and use the hole in the west fence. Open his strongbox to rig the fuel stash, then get out before it blows.
+  - **Deal, then betray:** if they spot you, Vance walks over and offers you a deal. Take it, tell Kessler the truth at the intercom, and give Vance her spiked "cure".
+- **Raider behaviour:** raiders see in a cone and hear you close up. Night and crouching shrink how far they notice you, and walls block their sight. Attacking them sets off the alarm.
+- **Inside the lab:** once the gang is dealt with, the gate opens on a walk-in lab with a lobby, a lab, and a dorm with a generator. It has dim warm lights (fewer on low quality), furniture and loot crates. Dr. Kessler, Sgt. Ortiz and Mina Cho (the radio voice) all have things to say. Give Kessler your blood to reach **TO BE CONTINUED** (v7.7: the cure trials).
+- **Carla's shop in Harlow (cash only):**
+  - handgun $600 (the only gun);
+  - 12 rounds for $60;
+  - body armor $450 (−35% damage);
+  - helmet $250 (−15% damage).
+- **How gear works:**
+  - Gear is per player in co-op and survives death.
+  - Armor and helmet show in HUD slots and on your avatar, and you take them on or off on the character screen (K).
+  - The handgun goes in hotbar slot 9 and holds 8 rounds.
+  - It's loud: zombies within about 60 m come running.
+  - An empty magazine just clicks. **R** reloads.
+- **Samples:** Mayor Ruth now takes free samples and counts as a customer. Gus, the guards and the kids don't, and the journal total matches. The night guards now rest by the fire during the day, so everyone who can buy can be found. This fixes the stuck 11/13.
+- **Journal:** a new "Research site" chapter tracks your progress.
+
 ## v7.5 — skills & perks, choppable forest, clean picture, real map (Oct 24, 2026)
 - **Skills & perks** (character screen, **K**): Dealing, Scavenging and Woodcutting go from 0 to 10 as you use them. Perks unlock at set levels: **Pack All** (Dealing 7; Package all at the bench is no longer free), Smooth Talker (Dealing 4, the scale settles 2× faster), Keen Eye (Scavenging 4, more baggies in cupboards), Pack Rat (Scavenging 8, bonus scrap/cloth), Clean Cuts (Woodcutting 3, +15% chop damage), Lumberjack (Woodcutting 7, 4 logs). Saved and synced in co-op.
 - **Every open-world tree can be chopped.** It falls, drops logs, stays felled (saved and synced) and regrows after 6 in-game days.
@@ -198,6 +221,9 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Crouch (quieter, slower; zombies notice you at half range) | C (hold) or Z (toggle); Left Ctrl only in fullscreen with Keyboard Lock (Chrome) | CROUCH |
 | Build / Craft / Grow menu — one menu with tabs (Q / E or click to switch). Craft: bow, arrows, steel axe (near a workbench). Grow: grow pot, planter, bucket, shovel, dig dirt, compost. Each item shows its cost and what you have; greyed items list what's missing | B (G opens it on the Craft tab; 1-9 pick) | BUILD/CRAFT or CRAFT |
 | Bow (quiet; needs arrows) | 7, LMB | slot 7, HIT |
+| Handgun (loud; 8-round magazine, bought from Carla) | 9, LMB to fire, R to reload | slot 9, HIT |
+| Body armor / helmet (bought from Carla) | worn automatically; take off or put on in the character screen (K) | STATS |
+| Gate intercom, Vance's strongbox, research-site staff | E | ACT |
 | Dig dirt (shovel selected in the hotbar, on grass / dirt) | E or LMB | ACT / HIT |
 | Talk to townspeople, knock at the Harlow gate, grow (pots), package (bench) | E (1-9 pick a dialogue option) | ACT |
 | Journal (objective, quest, customers, grow slots, caption log); dismiss newest caption | J; Q or click | JOURNAL; tap caption |

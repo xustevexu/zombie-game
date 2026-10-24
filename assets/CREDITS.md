@@ -10,6 +10,10 @@ All third-party assets are CC0 1.0 (public domain). Attribution is not required;
 | Poly Haven textures, models, HDRI (sparse_grass, forest_leaves_02, brown_mud_02, bark_brown_02, weathered_planks, red_brick_03, concrete_wall_008, aerial_rocks_02, rusty_metal_02, rock_07, rock_09, namaqualand_stones_01, dry_branches_medium_01, fern_02, tree_stump_01, farmland_overcast) | assets/tex, assets/mod, assets/hdr | Poly Haven contributors | CC0 1.0 | https://polyhaven.com |
 | Kenney Car Kit, Suburban (City) Kit, City Kit Commercial 2.1, City Kit Roads, Survival Kit, Nature Kit | assets/kenney/kit.glb (merged, meshopt; cars, roadblock, van, tents, signs, lights, trees, rocks, bushes) | Kenney | CC0 1.0 | https://kenney.nl/assets |
 | Kenney Furniture Kit (fridges, kitchen cabinets, stove, sink, beds, tables, sofa, bookcases, boxes, etc.); extra Car Kit (sedan-sports, suv-luxury, truck-flat) and City Kit Roads (signs, traffic light, electricity pole, dumpster) models | assets/kenney/kit.glb | Kenney | CC0 1.0 | https://kenney.nl/assets/furniture-kit |
+| Pistol | assets/kenney/kit.glb node gear_pistol (handgun: first-person view, avatars, raiders) | Quaternius | CC0 1.0 | https://poly.pizza (static.poly.pizza/f5a88c73-af97-49ca-8650-4bde579d2f80.glb) |
+| Armor Metal | assets/kenney/kit.glb node gear_armor (worn body armor on avatars) | Quaternius | CC0 1.0 | https://poly.pizza (static.poly.pizza/60ccfcdb-6aa7-4caf-a688-9b16a2a5f300.glb) |
+| Pistol Ammo | assets/kenney/kit.glb node gear_ammo | CreativeTrio | CC0 1.0 | https://poly.pizza (static.poly.pizza/f943e9ad-f9ee-4bce-ba9b-49bbaf7eeaf4.glb) |
+| Helmet, watchtower, lab walls, intercom | procedural (self-made; no CC0 helmet fit the rig) | this game | — | — |
 | Deer | assets/animals/deer.glb | Quaternius | CC0 1.0 | https://poly.pizza/m/T6Cs7tmMHJ |
 | Raccoon | assets/animals/raccoon.glb | Quaternius | CC0 1.0 | https://poly.pizza/m/xMmx6VQP3r |
 | Pig (tinted dark as the boar) | assets/animals/boar.glb | Quaternius | CC0 1.0 | https://poly.pizza/m/u35l6uP5vj |
