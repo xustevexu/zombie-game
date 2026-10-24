@@ -1969,7 +1969,7 @@ var HOWTO = [
   ["Shovel & dirt", "Craft: B \u2192 Grow \u2192 Shovel. Select it in the hotbar, then E or LMB on any grass / dirt (not roads, floors or the fort)."],
   ["Grow pot", "B \u2192 Grow \u2192 Grow pot, place it in your shack. E at the pot: add soil \u2192 plant a seed \u2192 water once a day \u2192 harvest."],
   ["Better soil", "B \u2192 Grow \u2192 Compost: 1 dirt + 2 food (or 1 meat) = rich soil for bigger harvests."],
-  ["Packaging", 'E at the bench in your shack opens the bench view: drag (or tap) a bud from the jar into the open baggie, wait for the scale, then drag along the zip (or tap SEAL / Space). 2 baggies per bud. After 6 by hand, "Package all" unlocks. Esc leaves.'],
+  ["Packaging", 'E at the bench in your shack (or a Packing bench you build \u2014 B menu) opens the bench view: drag (or tap) a bud from the jar into the open baggie, wait for the scale, then drag along the zip (or tap SEAL / Space). 2 baggies per bud. After 6 by hand, "Package all" unlocks. Esc leaves.'],
   ["Selling & rent", "Talk to townsfolk (E) to give free samples and sign customers. Rent is 5 baggies to Gus every few days, or buy your house."],
   ["Hotbar", "1\u20139 / mouse wheel / tap. LMB uses the selected item (axe swings, food eats, bow shoots, shovel digs)."],
   ["Waypoint & map", "N toggles the on-screen quest marker; M is the full map; the yellow diamond is your objective."],
@@ -21459,7 +21459,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       ["pot", me.inv.pot > 0 || pots.length > 0, "TIP: Grow pot \u2014 B \u2192 Grow tab \u2192 Grow pot to place it in your shack, then " + E2 + " at the pot to add soil."],
       ["plant", g.some((x) => x.f && !x.s) && me.inv.seeds > 0, `TIP: Planting \u2014 ${E2} at a soil-filled pot plants a seed. Water it once a day (${E2}) to speed it up.`],
       ["harvest", g.some((x) => x.s === 2), `TIP: Harvest \u2014 your plant is ready. ${E2} at the pot cuts it for buds + seeds.`],
-      ["package", me.inv.bud > 0, `TIP: Packaging \u2014 ${E2} at the bench in your shack, then drag each bud into a baggie and zip it shut (2 per bud).`],
+      ["package", me.inv.bud > 0, `TIP: Packaging \u2014 ${E2} at the bench in your shack (or a Packing bench you build \u2014 B menu), then drag each bud into a baggie and zip it shut (2 per bud).`],
       ["rent", !!tw.entry && !tw.own, "TIP: Rent \u2014 Gus wants 5 baggies every few days (see the objective line). Give townsfolk samples to sign customers."]
     ];
     for (const [k, c, t] of T2) if (c && !this.tipSeen.has(k)) {
