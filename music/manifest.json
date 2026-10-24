@@ -1,0 +1,5 @@
+{
+  "crossfade": 6,
+  "day":   ["track1.m4a", "track2.m4a"],
+  "gain":  { "track1.m4a": 0.85, "track2.m4a": 0.85 }
+}
