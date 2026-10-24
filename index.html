@@ -2214,7 +2214,7 @@ function buildWorld(seed) {
   }
   if (W.batCar >= 0) {
     const c = W.loot[W.batCar], tx = W.tent ? W.tent.x : 0, tz = W.tent ? W.tent.z : 0, rot90 = Math.abs(c.rot) > 0.1;
-    const ok = (x, z) => !W.buildings.some((b) => x > b.x0 - 3.2 && x < b.x1 + 3.2 && z > b.z0 - 3.2 && z < b.z1 + 3.2) && Math.hypot(x - tx, z - tz) > 9 && W.loot.every((n, i) => i === W.batCar || Math.hypot(n.x - x, n.z - z) > 3.6) && W.rocks.every((r) => Math.hypot(r.x - x, r.z - z) > r.r + 3);
+    const ok = (x, z) => !W.buildings.some((b) => x > b.x0 - 3.2 && x < b.x1 + 3.2 && z > b.z0 - 3.2 && z < b.z1 + 3.2) && Math.hypot(x - tx, z - tz) > 9 && W.loot.every((n, i) => i === W.batCar || Math.hypot(n.x - x, n.z - z) > (n.kind === "car" ? 6.5 : 3.6)) && W.rocks.every((r) => Math.hypot(r.x - x, r.z - z) > r.r + 3);
     let best = null;
     for (let k = 0; k < 60 && !best; k++) {
       const a = Math.atan2(tz - H.z, tx - H.x) + (k % 2 ? 1 : -1) * Math.floor(k / 2) * 0.12, d = Math.max(H.x1 - H.x0, H.z1 - H.z0) / 2 + 4 + Math.floor(k / 24) * 2;
@@ -2685,6 +2685,7 @@ var PIECES = {
   trap: { n: "Spike trap", cls: "cell", key: "", cost: [{ wood: 3, scrap: 2 }], hp: [60], h: 0, bench: true, d: "Hurts zombies that walk over it (needs a workbench nearby)." },
   bag: { n: "Sleeping bag", cls: "cell", key: "", cost: [{ cloth: 4 }], hp: [40], h: 0, d: "Sets your respawn point here (comes back at 60% health)." },
   pot: { n: "Grow pot", cls: "free", key: "", cost: [{ pot: 1 }], hp: [50], h: 0.5, d: "Uses a pot / planter / bucket from your pack. Then E: soil, a seed, water. Allowed outside the fort, or by your room inside it." },
+  pbench: { n: "Packing bench", cls: "cell", key: "", cost: [{ wood: 5, scrap: 2 }], hp: [120], h: 0.9, d: "Your own packaging bench: E opens the baggie packing mini-game (needs buds + empty baggies)." },
   bed: { n: "Bed", cls: "cell", key: "", cost: [{ wood: 6, cloth: 6 }], hp: [90], h: 0.5, d: "Respawn point \u2014 you come back healthier." }
 };
 var PIECE_IDS = Object.keys(PIECES);
@@ -2726,7 +2727,7 @@ function structCol(s) {
   if (s.t === "torch") return { x0: s.x - 0.08, x1: s.x + 0.08, z0: s.z - 0.08, z1: s.z + 0.08, h: pc.h };
   if (s.t === "bed") return s.r & 1 ? { x0: s.x - 0.95, x1: s.x + 0.95, z0: s.z - 0.5, z1: s.z + 0.5, h: pc.h } : { x0: s.x - 0.5, x1: s.x + 0.5, z0: s.z - 0.95, z1: s.z + 0.95, h: pc.h };
   if (s.t === "campfire") return { x0: s.x - 0.45, x1: s.x + 0.45, z0: s.z - 0.45, z1: s.z + 0.45, h: pc.h };
-  if (s.t === "bench") return s.r & 1 ? { x0: s.x - 0.7, x1: s.x + 0.7, z0: s.z - 0.4, z1: s.z + 0.4, h: pc.h } : { x0: s.x - 0.4, x1: s.x + 0.4, z0: s.z - 0.7, z1: s.z + 0.7, h: pc.h };
+  if (s.t === "bench" || s.t === "pbench") return s.r & 1 ? { x0: s.x - 0.7, x1: s.x + 0.7, z0: s.z - 0.4, z1: s.z + 0.4, h: pc.h } : { x0: s.x - 0.4, x1: s.x + 0.4, z0: s.z - 0.7, z1: s.z + 0.7, h: pc.h };
   return { x0: s.x - 0.5, x1: s.x + 0.5, z0: s.z - 0.4, z1: s.z + 0.4, h: pc.h };
 }
 setStructCollider(structCol);
@@ -2774,7 +2775,7 @@ function canPlace(W, S2, p, type, tier, rot, px, pz) {
       res.why = "Not down here";
       return res;
     }
-  } else if (inMyRoom(W, S2, sn.x, sn.z) && ["chest", "torch", "bench", "bed", "bag"].includes(type)) {
+  } else if (inMyRoom(W, S2, sn.x, sn.z) && ["chest", "torch", "bench", "bed", "bag", "pbench"].includes(type)) {
   } else if (inFort(sn.x, sn.z) || Math.abs(sn.z - TOWN.FZ1) < 3 && Math.abs(sn.x) < 5) {
     res.why = "Not inside Harlow";
     return res;
@@ -2851,12 +2852,16 @@ function structAction(S2, p, s) {
   const repairItem = s.tier ? "scrap" : "wood", canRepair = (p.inv[repairItem] || 0) >= 1;
   const repair = { act: "repair", text: `Repair ${pc.n.toLowerCase()} (1 ${repairItem})`, ok: canRepair };
   if (s.t === "pot") return { act: "pot", text: potText(S2, S2.tw && S2.tw.g ? S2.tw.g[s.id] : null, p.inv), ok: true };
-  const noPrimary = !["door", "chest", "bench", "bed", "bag"].includes(s.t);
+  const noPrimary = !["door", "chest", "bench", "bed", "bag", "pbench"].includes(s.t);
   if (hurt && (noPrimary || s.hp < mx * 0.5)) return repair;
   if (s.t === "door") return { act: "door", text: s.open ? "Close door" : "Open door", ok: true };
   if (s.t === "chest") {
     const has = ITEM_NAMES.some((k) => p.inv[k] > 0), tot = s.c ? s.c.reduce((a, b) => a + b, 0) : 0;
     return { act: "chest", text: has ? "Chest: deposit everything you carry" : `Chest: take all (${s.c ? ITEM_NAMES.map((k, i) => s.c[i] ? s.c[i] + " " + k : "").filter(Boolean).join(", ") || "empty" : "empty"})`, ok: has || tot > 0 };
+  }
+  if (s.t === "pbench") {
+    const tw = S2.tw || {}, n = (p.inv.bud | 0) * 2 + (p.inv.budh | 0);
+    return { act: "pbench", text: `Packing bench${n ? ` \u2014 pack baggies by hand (${n} to go)` : " \u2014 bring buds to pack"} \xB7 ${((tw.ebag ?? 50) | 0) + (p.inv.ebag | 0)} empty baggies`, ok: n > 0 };
   }
   if (s.t === "bench") {
     if (p.ax >= 2) return { act: "bench", text: "Workbench (you already have the steel axe)", ok: false };
@@ -2900,7 +2905,7 @@ function findInteractAll(W, S2, me) {
     const a = structAction(S2, me, s);
     if (!a) continue;
     bs = sc;
-    best = { k: "st", i: s.id, text: a.text, ok: a.ok };
+    best = a.act === "pbench" ? { k: "tw", a: "pack", i: 0, text: a.text, ok: a.ok } : { k: "st", i: s.id, text: a.text, ok: a.ok };
   }
   if (me.inv && me.inv.meat > 0 && !(me.ck > 0)) {
     const fires = [{ x: W.tent.x - 2.6, z: W.tent.z + 2.4 }];
@@ -3690,6 +3695,7 @@ function ebagBack(tw, n) {
   tw.ebag = (tw.ebag | 0) + n;
 }
 var near2 = (p, q, r) => q && Math.hypot(p.x - q.x, p.z - q.z) < r;
+var nearPack = (sim, p) => near2(p, sim.W.tw && sim.W.tw.table, 2.6) || [...sim.S.structs ? sim.S.structs.values() : []].some((s) => s.t === "pbench" && near2(p, s, 3.4));
 var MAG = 8;
 function gearAct(sim, p, id) {
   const inv = p.inv, toast = (m) => sim.toast(p.id, m);
@@ -3822,7 +3828,7 @@ function townUse(sim, p, tg) {
     return toast("The old plant is picked clean and dying. New seeds come from your own harvests.");
   }
   if (a === "pack1") {
-    if (!near2(p, T2.table, 2.6)) return;
+    if (!nearPack(sim, p)) return;
     if (!useEbag(tw, p, 1)) return toast("Out of empty baggies. Search kitchen cupboards in homes for more.");
     if (p.inv.budh > 0) p.inv.budh--;
     else if (p.inv.bud > 0) {
@@ -3840,7 +3846,7 @@ function townUse(sim, p, tg) {
     return;
   }
   if (a === "pack") {
-    if (!near2(p, T2.table, 2.6)) return;
+    if (!nearPack(sim, p)) return;
     if (!hasPerk(p, "packall")) return toast("Pack All is a perk: reach Dealing 7/10 by packing baggies by hand (K shows your skills).");
     if (p.inv.bud < 1 && !p.inv.budh) return toast("Nothing to package. Bring buds here.");
     const tot = p.inv.bud * 2 + (p.inv.budh | 0), k = Math.min(tot, ebags(tw, p));
@@ -5919,6 +5925,13 @@ function icon(key) {
       g.moveTo(24, 24);
       g.quadraticCurveTo(32, -2, 40, 24);
       g.fill();
+      break;
+    case "pbench":
+      rect(8, 28, 48, 7, wood, dk);
+      rect(12, 35, 5, 20, dk);
+      rect(47, 35, 5, 20, dk);
+      rect(14, 20, 12, 8, metal, dk);
+      rect(34, 18, 14, 10, "#d8d0b0", dk);
       break;
     case "trap":
       rect(8, 46, 48, 8, wood, dk);
@@ -16332,6 +16345,14 @@ function buildStruct(MT_, SH, s) {
     P.box("dark", 0.12, 0.2, 0.12, 0.35, 1.05, -0.12);
     P.add("metal", cyl2(0.025, 0.025, 0.5, 5), 0, 1, 0.22, 0, 0, Math.PI / 2);
     P.add("metal", cyl2(0.02, 0.02, 0.4, 5), 0.3, 1, 0.2, Math.PI / 2, 0, 0.3);
+  } else if (t === "pbench") {
+    P.box("wood", 1.3, 0.08, 0.7, 0, 0.86, 0);
+    for (const [x, z] of [[-0.56, -0.28], [0.56, -0.28], [-0.56, 0.28], [0.56, 0.28]]) P.box("wood2", 0.09, 0.86, 0.09, x, 0.43, z);
+    P.box("wood2", 1.2, 0.06, 0.6, 0, 0.25, 0);
+    P.box("metal", 0.26, 0.05, 0.22, -0.35, 0.93, 0);
+    P.box("dark", 0.2, 0.04, 0.14, -0.35, 0.97, 0);
+    P.add("cloth", cyl2(0.16, 0.1, 0.1, 10), 0.05, 0.95, 0.05);
+    P.box("cloth2", 0.28, 0.12, 0.2, 0.42, 0.96, -0.1);
   } else if (t === "trap") {
     P.box("dark", 1.4, 0.07, 1.4, 0, 0.04, 0, 0, 0, 0, 0.5);
     for (let i = 0; i < 16; i++) {
