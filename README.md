@@ -7,6 +7,13 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.2 — real people, sleep, slower days (Oct 24, 2026)
+- **Day length is now 7.5 real minutes** (was 3): `DAY_LEN` 450 s. Hunger and thirst drain per real second, so per real minute they are unchanged. Grow-pot stages take 3 real minutes (was 2.5). NPC schedules follow the clock and still line up; horde nights are counted in game days, so they come ~2.5x less often in real time; weekly rent is 7 game days (~52 real minutes).
+- **Sleep:** use your bed at night (after ~5 PM) to fade out and wake at 7 AM; time, plants, hunger and NPC schedules move on. Blocked with a horde on, a zombie within 25 m, or in daytime. Co-op: everyone has to be in bed.
+- **Townspeople and zombies** are Quaternius Universal Base Characters with the Universal Animation Library (CC0, see `assets/CREDITS.md`): per-job outfits and tools, real walk/work/talk animations; zombies are darker, torn and bloody, shamble and scratch, and play a death animation. LOD: far people animate every 2nd/4th frame; all share 2 meshes + 2 clip libraries. Opening `index.html` from `file://` keeps the old procedural people (browsers block the .glb fetch) — use the hosted page or a local server.
+- **Fixes:** Harlow waypoint only after the radio works; no grass inside buildings; doors look like doors; melee needs line of sight (no hitting through walls either way, knockback no longer pushes zombies through walls); the gate eye-slot moves with the gate; no stray blocks on the axe; warm dim flickering night lights; darker matte fridge; pause menu centred and scrollable; thin flush chest straps; packaging counts a portion off when it goes in the bag and back only on Take out / Leave; Gus's locked room only in Gus's rental, the bought house is all yours (with a second bed).
+- Not done this round (left in `next_batch.md`): animated CC0 wildlife, CC0 cars, homes, fort buildings, streets and props; zombies pathing round to an opening / bashing doors when blocked; player avatars still procedural.
+
 ## v7.0.1 — playtest fixes + town loot (Oct 23, 2026)
 - Harlow signpost: the board hangs clear of the post so the arrow shows; the road-sign note is pinned to the post (no floating plank); all sign text (signpost, street signs, shop signs) is sized to fit its board.
 - Shop and street signs pick up faint moonlight at night so they stay readable.
@@ -171,8 +178,8 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
 | Character screen | K | STATS |
 | Quest waypoint on/off | N | — |
-| Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed | E | USE |
-| Packaging bench: drag bud → baggie, drag zip / SEAL; leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
+| Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed (night only: skips to 7 AM) | E | USE |
+| Packaging bench: drag bud → baggie, drag zip / SEAL, Take out (returns the portion); leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
 | Place a grow pot (the ghost follows the crosshair to the floor; look down to place it as close as ~0.6 m) | B → Grow tab → Grow pot (R rotates, LMB places) | BUILD/CRAFT, then PLACE |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
 | Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
