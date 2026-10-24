@@ -249,7 +249,7 @@
 </div>
 <div id="menu" class="overlay">
   <div class="panel wide">
-    <h1>LAST LIGHT</h1>
+    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.7</div>
     <h2>Stage 1 &middot; Find shelter. Survive three nights. (hobby build)</h2>
     <p>You wake up in a tent. The dead walk at night. Scavenge wood, board up a ruined building and hold out until dawn&hellip; the first step toward building something bigger.</p>
     <div class="row"><input id="name" type="text" maxlength="14" placeholder="Your name" autocomplete="off"></div>
@@ -282,7 +282,7 @@
 
 <div id="pause" class="overlay hidden">
   <div class="panel wide">
-    <h1 style="font-size:24px">PAUSED</h1>
+    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.7</small></h1>
     <h2 id="pauseNote">The game is paused.</h2>
     <div class="tools">
       <button class="btn" id="bResume">Resume</button>
@@ -1006,7 +1006,7 @@ function gangUpdate(sim, ow, ps, dt) {
       if (d > 1.3) moveTo(m, t.x, t.z, 4.2);
       else {
         m[2] = Math.atan2(t.x - m[0], t.z - m[1]);
-        if (m[4] <= 0) {
+        if (m[4] <= 0 && !meleeBlocked(sim.W, sim.S, m[0], m[1], t.x, t.z, t.y || 0)) {
           m[4] = 1.2;
           sim.emit("gatk", m[0], m[1], t.id, ow.gm.indexOf(m));
           sim.hurt(t, 9 + Math.random() * 6);
@@ -1026,12 +1026,22 @@ function gangDialogue(S2, me) {
   const ow = owState(S2.tw), g = ow.g, o = [], tw = S2.tw;
   if (g.st === 2) return { name: "Raiders", text: '"Get him!"', opts: [["Run", "bye"]] };
   if (g.st !== 1 || g.tgt !== me.id) return { name: "Raiders", text: `"Road's ours. Keep walking."`, opts: [["Leave", "bye"]] };
+  const bag = me.inv.bag | 0, gr = repOf(tw).g;
+  if (ow.gq === 2) {
+    if (bag > 0 && !ow.gs) o.push(["Offer them a free sample (1 baggie)", "gsample"]);
+    else if (bag > 0) o.push([`Sell them a baggie ($${gangPrice(tw)})`, "gsell"]);
+    else if (ow.gs) o.push([`"Sorry, I'm out."`, "gout"]);
+    o.push(['"Just passing through."', "gpass"]);
+    return { name: "Raider boss", text: `*The bat stays down.* "${ow.gs ? "Our supplier! Got any more of that green?" : "Look who it is. You did right by us. What you got?"}" (Road gang liked ${Math.round(gr)}/100)`, opts: o };
+  }
+  if (ow.gq === 1 && ((me.inv.meat | 0) >= 3 || (me.inv.cooked | 0) >= 2)) o.push([(me.inv.meat | 0) >= 3 ? "Hand over the 3 raw meat they asked for" : "Hand over 2 cooked meat (their job)", "gtask"]);
   if (tw.cash >= 20) o.push(["Pay the toll ($20)", "gpay"]);
   else if ((me.inv.food | 0) >= 2) o.push(["Hand over 2 food", "gpay"]);
   else if ((me.inv.scrap | 0) >= 3) o.push(["Hand over 3 scrap", "gpay"]);
-  o.push([`"I've got nothing worth your time. Let me pass."`, "gtalk"], ["Fight", "gfight"], ["Run for it", "gflee"]);
+  o.push([ow.gq === 1 ? '"Still working on your meat. Let me pass."' : `"I've got nothing worth your time. Let me pass."`, "gtalk"], ["Fight", "gfight"], ["Run for it", "gflee"]);
   return { name: "Raider boss", text: '*Three of them. A bat taps the road.* "Toll road, friend. Everybody pays. Cash, food, metal \u2014 or we take it off your body."', opts: o };
 }
+var gangPrice = (tw) => Math.round(BAG_P * 1.2 * (repOf(tw).g >= 70 ? 1.15 : 1));
 function gangTalk(sim, p, a) {
   const S2 = sim.S, ow = owState(S2.tw), g = ow.g, tw = S2.tw, day2 = Math.floor((S2.time || 0) / 450);
   if (g.st !== 1 || g.tgt !== p.id) return;
@@ -1044,17 +1054,53 @@ function gangTalk(sim, p, a) {
     g.day = day2;
     sim.toast(p.id, `"Pleasure doing business. Road's yours \u2014 today. Vance will be pleased."`);
   } else if (a === "gtalk") {
-    const ok = Math.random() < Math.min(0.85, 0.35 + 0.06 * (p.lv | 0));
-    if (ok) {
-      g.st = 3;
-      g.day = day2;
-      sim.toast(p.id, 'The boss looks you over and laughs. "Scrawny. Go on, before I change my mind."');
-    } else {
-      g.st = 2;
-      sim.toast(p.id, '"Wrong answer."');
-    }
+    g.st = 3;
+    g.day = day2;
+    if (!ow.gq) {
+      ow.gq = 1;
+      sim.toast(p.id, 'The boss looks you over. "Nothing, huh? Then you work it off. Bring us 3 raw meat \u2014 2 cooked will do. Do that and maybe we stop hating your face. Now walk." (Task: bring the road gang 3 raw or 2 cooked meat)');
+    } else sim.toast(p.id, `"Still empty-handed? Clock's ticking. 3 raw meat or 2 cooked. Go."`);
+  } else if (a === "gtask") {
+    if ((p.inv.meat | 0) >= 3) p.inv.meat -= 3;
+    else if ((p.inv.cooked | 0) >= 2) p.inv.cooked -= 2;
+    else return;
+    ow.gq = 2;
+    g.st = 3;
+    g.day = day2;
+    sim.xp(p, 40, p.x, p.z);
+    sim.toast(p.id, `"Huh. You actually did it." The bat drops. "Fine. You're not hated round here any more. Road's open \u2014 and if you've got anything to smoke, we're buying."`);
+    repAdd(sim, p, "g", 10);
+  } else if (a === "gsample") {
+    if ((p.inv.bag | 0) <= 0 || ow.gq !== 2) return;
+    p.inv.bag--;
+    ow.gs = 1;
+    g.st = 3;
+    g.day = day2;
+    sim.toast(p.id, `*He sniffs it, grins.* "Oh, that's the good stuff. Come back with more \u2014 we pay."`);
+    repAdd(sim, p, "g", 5);
+  } else if (a === "gsell") {
+    if ((p.inv.bag | 0) <= 0 || ow.gq !== 2) return;
+    const pr = gangPrice(tw);
+    p.inv.bag--;
+    tw.cash = (tw.cash | 0) + pr;
+    tw.sales = (tw.sales | 0) + 1;
+    g.st = 3;
+    g.day = day2;
+    sim.toast(p.id, `"Pleasure." (+$${pr})`);
+    repAdd(sim, p, "g", 5 + Math.round(Math.random() * 5));
+  } else if (a === "gout") {
+    g.st = 3;
+    g.day = day2;
+    sim.toast(p.id, '"Out? Then why are you wasting my time."');
+    repAdd(sim, p, "g", -(1 + Math.round(Math.random())));
+  } else if (a === "gpass") {
+    g.st = 3;
+    g.day = day2;
+    sim.toast(p.id, '"Go on then."');
   } else if (a === "gfight") {
     g.st = 2;
+    if (tw.rep) tw.rep.g = 0;
+    ow.gq = 0;
     sim.toast(p.id, 'You raise your weapon. "Your funeral."');
   } else if (a === "gflee") {
     g.st = 2;
@@ -1263,7 +1309,7 @@ function hqUpdate(sim, dt) {
       if (bd > 1.3) moveTo(m, t.x, t.z, m[6] ? 3.6 : 4.2);
       else {
         face(m, t.x, t.z);
-        if (m[4] <= 0) {
+        if (m[4] <= 0 && !meleeBlocked(sim.W, sim.S, m[0], m[1], t.x, t.z, t.y || 0)) {
           m[4] = m[6] ? 1 : 1.25;
           sim.emit("gatk", m[0], m[1], t.id, 100 + ow.hm.indexOf(m));
           sim.hurt(t, m[6] ? 14 + Math.random() * 6 : 8 + Math.random() * 5);
@@ -1747,8 +1793,46 @@ function newTown() {
     nextHorde: 0,
     sales: 0,
     clues: [],
-    ebag: 50
+    ebag: 50,
+    rep: { h: 10, g: 0, t: { h: 0, g: 0 } }
   };
+}
+var REP_NAME = { h: "Harlow", g: "Road gang" };
+var repOf = (tw) => {
+  if (!tw.rep) tw.rep = { h: 10, g: 0, t: { h: 0, g: 0 } };
+  if (!tw.rep.t) tw.rep.t = { h: 0, g: 0 };
+  return tw.rep;
+};
+var REP_TIER = [[30, "They are starting to notice you."], [70, null], [80, null], [95, null]];
+var REP_MSG = {
+  h: { 70: "Harlow likes you (70+): townsfolk pay ~10% more per baggie.", 80: "Mayor Ruth has a private job for a trusted friend of Harlow (exclusive quest \u2014 see the journal).", 95: `EPIC: Harlow wants you as its champion. "Harlow's Champion" questline unlocked (journal) \u2014 more in a coming update.` },
+  g: { 70: "The road gang likes you (70+): no toll, and they pay ~15% more per baggie.", 80: 'The raider boss has a "special delivery" for you (exclusive quest \u2014 see the journal).', 95: 'EPIC: the crew wants you riding with them. "Ride with the Crew" questline unlocked (journal) \u2014 more in a coming update.' }
+};
+function repAdd(sim, p, k, d) {
+  const tw = sim.S.tw;
+  if (!tw) return;
+  const r = repOf(tw), o = k === "h" ? "g" : "h", old = r[k];
+  r[k] = Math.max(0, Math.min(100, Math.round((old + d) * 10) / 10));
+  if (d > 0 && r[k] > 30 && r[o] > 0) {
+    const loss = Math.round(d * 0.4 * 10) / 10;
+    r[o] = Math.max(0, r[o] - loss);
+    if (old <= 30 || Math.random() < 0.25) sim.toast(p.id, `${REP_NAME[o]} heard you've been cosy with ${k === "h" ? "Harlow" : "the road gang"} (\u2212${loss} liked).`);
+  }
+  for (const [lv, m0] of REP_TIER) if (r[k] >= lv && (r.t[k] | 0) < lv) {
+    if (lv === 95 && r[o] >= 30) continue;
+    r.t[k] = lv;
+    sim.toast(p.id, `${REP_NAME[k]} standing ${Math.round(r[k])}/100 \u2014 ${m0 || REP_MSG[k][lv]}`);
+  }
+  if (d) sim.toast(p.id, `${REP_NAME[k]} liked ${d > 0 ? "+" : ""}${Math.round(d * 10) / 10} \u2192 ${Math.round(r[k])}/100`);
+}
+function repText(tw) {
+  const r = repOf(tw), side = r.h >= 30 && r.g < 30 ? "Harlow" : r.g >= 30 && r.h < 30 ? "the road gang" : null;
+  const q = [];
+  if ((r.t.h | 0) >= 80) q.push("\u2605 Ruth's private job (Harlow 80) \u2014 placeholder, coming soon");
+  if ((r.t.h | 0) >= 95) q.push("\u2605\u2605 EPIC: Harlow's Champion (Harlow 95) \u2014 coming soon");
+  if ((r.t.g | 0) >= 80) q.push("\u2605 Special delivery (gang 80) \u2014 placeholder, coming soon");
+  if ((r.t.g | 0) >= 95) q.push("\u2605\u2605 EPIC: Ride with the Crew (gang 95) \u2014 coming soon");
+  return `Harlow ${Math.round(r.h)}/100 \xB7 Road gang ${Math.round(r.g)}/100 \u2014 ${side ? `you lean towards ${side}` : r.h < 30 && r.g < 30 ? "quietly dealing to both (under 30 each)" : "both sides are watching you"}. Samples +5, sales +5\u201310, "sorry, I'm out" \u22121\u20132; past 30 the other side notices. 70 / 80 / 95 unlock bonuses, exclusive jobs and epic quests (epic only if you pick a side).${q.length ? "<br>" + q.join("<br>") : ""}`;
 }
 var price = (S2, base) => Math.max(1, Math.round(base * (0.8 + Math.max(0, S2.tw.fac) / 100)));
 var BAG_P = 25;
@@ -1954,6 +2038,10 @@ function dialogue(W, S2, me, i, viaSlot) {
     if (!tw.own && tw.cash >= HOUSE_P) o.push([`Buy the empty house at the end of the street ($${HOUSE_P})`, "house"]);
     {
       const vis = tw.vis.find((v) => v.i === i);
+      if (tw.signed[i] && vis && bag <= 0) {
+        o.push([`"Sorry, I'm out."`, "sorryout"]);
+        return say('"\u2026You holding? No?"');
+      }
       if (tw.signed[i] && vis && bag > 0) {
         o.push([`Sell 1 baggie ($${price(S2, BAG_P)})`, "sell1"]);
         o.push(["Not today", "nosale"]);
@@ -1973,6 +2061,10 @@ function dialogue(W, S2, me, i, viaSlot) {
   }
   if (isCustomer(i)) {
     const vis = tw.vis.find((v) => v.i === i);
+    if (tw.signed[i] && vis && bag <= 0) {
+      o.push([`"Sorry, I'm out."`, "sorryout"]);
+      return say('"Hey... you holding? I could use a little something."');
+    }
     if (tw.signed[i] && vis && bag > 0) {
       o.push([`Sell 1 baggie ($${price(S2, BAG_P)})`, "sell1"]);
       if (bag >= 2) o.push([`Sell 2 baggies ($${price(S2, BAG_P) * 2})`, "sell2"]);
@@ -2119,6 +2211,21 @@ function buildWorld(seed) {
       }
     });
     W.batCar = bi;
+  }
+  if (W.batCar >= 0) {
+    const c = W.loot[W.batCar], tx = W.tent ? W.tent.x : 0, tz = W.tent ? W.tent.z : 0, rot90 = Math.abs(c.rot) > 0.1;
+    const ok = (x, z) => !W.buildings.some((b) => x > b.x0 - 3.2 && x < b.x1 + 3.2 && z > b.z0 - 3.2 && z < b.z1 + 3.2) && Math.hypot(x - tx, z - tz) > 9 && W.loot.every((n, i) => i === W.batCar || Math.hypot(n.x - x, n.z - z) > 3.6) && W.rocks.every((r) => Math.hypot(r.x - x, r.z - z) > r.r + 3);
+    let best = null;
+    for (let k = 0; k < 60 && !best; k++) {
+      const a = Math.atan2(tz - H.z, tx - H.x) + (k % 2 ? 1 : -1) * Math.floor(k / 2) * 0.12, d = Math.max(H.x1 - H.x0, H.z1 - H.z0) / 2 + 4 + Math.floor(k / 24) * 2;
+      const x = H.x + Math.cos(a) * d, z = H.z + Math.sin(a) * d;
+      if (ok(x, z)) best = { x, z };
+    }
+    if (best) {
+      c.x = best.x;
+      c.z = best.z;
+      c.boxes = carBoxes(c.x, c.z, rot90, c.hue, c.v);
+    }
   }
   SR(-0.6, 0.6);
   const ta = -Math.PI / 2;
@@ -3812,12 +3919,14 @@ function talk(sim, p, n, a) {
       inv.bag--;
       tw.signed[n] = 1;
       tw.fac += 2;
+      repAdd(sim, p, "h", 5);
       tw.want[n] = S2.time + 60 + Math.random() * 60;
       say(`"For free? ...Oh. Oh, that's nice. I'll come find you when I want more."`);
       break;
     case "sell1":
     case "sell2": {
-      const k = a === "sell2" ? 2 : 1, pr = price(S2, BAG_P) * k;
+      const k = a === "sell2" ? 2 : 1, pr = Math.round(price(S2, BAG_P) * k * (repOf(tw).h >= 70 ? 1.1 : 1));
+      repAdd(sim, p, "h", 5 + Math.round(Math.random() * 5));
       inv.bag -= k;
       tw.cash += pr;
       tw.sales += k;
@@ -3831,6 +3940,13 @@ function talk(sim, p, n, a) {
       tw.vis = tw.vis.filter((v) => v.i !== n);
       tw.want[n] = S2.time + 90;
       break;
+    case "sorryout":
+      tw.vis = tw.vis.filter((v) => v.i !== n);
+      tw.want[n] = S2.time + 120;
+      repAdd(sim, p, "h", -1);
+      say('"Oh. Okay. Next time, then."');
+      break;
+    // v7.7
     case "meat": {
       const pr = price(S2, MEAT_P) * inv.meat;
       tw.cash += pr;
@@ -4130,11 +4246,15 @@ function townUpdate(sim, dt) {
   if (tw.hostile) {
     for (const p of ps) if (inFort(p.x, p.z) || near2(p, { x: 0, z: TOWN.FZ1 }, 12)) for (let i = 0; i < NPCS.length; i++) {
       const q = npcPos(W, S2, i);
-      if (q && near2(p, q, 2.2)) {
+      if (q && near2(p, q, 2.2) && !meleeBlocked(W, S2, q.x, q.z, p.x, p.z, p.y || 0) && !doorOnPath(W, S2, q.x, q.z, p.x, p.z)) {
         p.nh = (p.nh || 0) - dt;
         if (p.nh <= 0) {
           p.nh = 1.4;
           sim.hurt(p, 7);
+          if (!(p.nhw > S2.time)) {
+            p.nhw = S2.time + 20;
+            sim.toast(p.id, "Townspeople attacking \u2014 get clear of Harlow!");
+          }
         }
       }
     }
@@ -4177,6 +4297,8 @@ function townUpdate(sim, dt) {
       if (v.wait > 45) {
         tw.vis.splice(tw.vis.indexOf(v), 1);
         tw.want[v.i] = S2.time + 120;
+        repAdd(sim, p, "h", -2);
+        sim.toast(p.id, `${NPCS[v.i].n} got tired of waiting and left.`);
       }
       continue;
     }
@@ -5151,9 +5273,15 @@ var Sim = class {
     if (!S2.night) return np ? 2 : 0;
     return 4 + (np > 1 ? 2 : 0);
   }
+  /** v7.7: per-zombie detect range — hordes see/hear much further and peel off their loop to chase (still dampened inside Harlow's walls) */
+  zDetect(z, p) {
+    const r = this.detectRange(p);
+    if (!z.hd) return r;
+    return inFort(p.x, p.z) ? r * 1.6 : Math.max(r * 2, this.S.night ? 45 : 24);
+  }
   detectRange(p) {
     const S2 = this.S, W = this.W;
-    let r = S2.night ? 26 : 9;
+    let r = S2.night ? 32 : 12;
     if (buildingAt(W, p.x, p.z) || roofAt(S2, p.x, p.z)) r *= 0.55;
     if (litAt2(W, S2, p)) r *= 0.6;
     else for (const st of S2.structs.values()) if ((st.t === "campfire" || st.t === "torch") && Math.hypot(st.x - p.x, st.z - p.z) < (st.t === "campfire" ? 7 : 4)) {
@@ -5218,13 +5346,13 @@ var Sim = class {
       const lvl = !!z.bs;
       let tp = S2.players.get(z.tgt);
       if (tp && (!tp.alive || isBelow(tp.y) !== lvl)) tp = null;
-      if (tp && Math.hypot(tp.x - z.x, tp.z - z.z) > this.detectRange(tp) * 1.5) tp = null;
+      if (tp && Math.hypot(tp.x - z.x, tp.z - z.z) > this.zDetect(z, tp) * 1.5) tp = null;
       if (!tp) {
         let bd = 1e9;
         for (const p of players) {
           if (isBelow(p.y) !== lvl) continue;
           const d2 = Math.hypot(p.x - z.x, p.z - z.z);
-          if (d2 < (lvl ? 14 : this.detectRange(p)) && d2 < bd) {
+          if (d2 < (lvl ? 14 : this.zDetect(z, p)) && d2 < bd) {
             bd = d2;
             tp = p;
           }
@@ -5234,7 +5362,7 @@ var Sim = class {
       z.mode = tp ? "chase" : "wander";
       let gx, gz, speed, boardOp = -1;
       if (tp) {
-        speed = (S2.night ? 2.5 : 1.2) * (z.spd + 0.1);
+        speed = (S2.night ? 2.5 : z.hd ? 2 : 1.2) * (z.spd + 0.1);
         const g = lvl ? { x: tp.x, z: tp.z, op: -1 } : this.goal(z, tp);
         gx = g.x;
         gz = g.z;
@@ -5517,14 +5645,14 @@ function objectiveText(W, S2, me) {
   const St = S2.story || {}, H = W.house && { ...W.house, x: (W.house.x0 + W.house.x1) / 2, z: (W.house.z0 + W.house.z1) / 2 }, car = W.loot[W.batCar];
   if (S2.tw && (S2.tw.st > 0 || S2.tw.entry || me.z < -70)) return townObjective(W, S2, me, dirTo);
   if (St.radio) return `TRAVEL TO THE TOWN: Harlow lies ${dirTo(W.town)} \u2014 follow the road sign at the edge of the woods (${dirTo(W.sign)}).`;
-  if (St.batt === me.id + 1) return `Bring the battery to the radio in the house (${dirTo(W.radio)}) and repair it [E].`;
-  if (St.batt > 0) return `Your friend has the battery \u2014 get to the radio in the house (${dirTo(W.radio)}).`;
+  if (St.batt === me.id + 1) return `Bring the battery to the radio in the camp office (${dirTo(W.radio)}) and repair it [E].`;
+  if (St.batt > 0) return `Your friend has the battery \u2014 get to the radio in the camp office (${dirTo(W.radio)}).`;
   if (St.hood && car) return `Take the battery from the car (${dirTo(car)}) [E].`;
   const inHouse = H && me.x > H.x0 && me.x < H.x1 && me.z > H.z0 && me.z < H.z1;
   if (me.radioSeen || inHouse) return car ? `The radio needs a battery. Open the hood of the car ${dirTo(car)} [E].` : "The radio needs a battery.";
-  if (Math.hypot(me.x - W.tent.x, me.z - W.tent.z) < 4) return `Something is wrong. Find help: there is a house through the trees (${dirTo(H)}). ${me.ax ? "" : "Grab the axe by the campfire [E]."}`;
-  if (S2.night) return `Night: stay close to light. Head for the house (${dirTo(H)}).`;
-  return `Search the house (${dirTo(H)}) \u2014 maybe there is a phone or a radio.`;
+  if (Math.hypot(me.x - W.tent.x, me.z - W.tent.z) < 4) return `Something is wrong. Find help: the campground check-in office is through the trees (${dirTo(H)}). ${me.ax ? "" : "Grab the axe by the campfire [E]."}`;
+  if (S2.night) return `Night: stay close to light. Head for the campground office (${dirTo(H)}).`;
+  return `Search the campground check-in office (${dirTo(H)}) \u2014 maybe there is a phone or a radio.`;
 }
 
 // src/hotbar.js
@@ -12252,10 +12380,6 @@ function buildTown2(M, W, T2, g, SH) {
       void lx;
       void lz;
       put("lawn", new THREE9.PlaneGeometry(along2 ? w + 2 : 4, along2 ? 4 : w + 2).rotateX(-Math.PI / 2), along2 ? h.cx : h.cx + fx * (w / 2 + 2), 0.035, along2 ? h.cz + fz * (d / 2 + 2) : h.cz, 0, jit(5664826, h.hue, 0.25));
-      for (let k = 0; k < 6; k++) {
-        const u = (k / 5 - 0.5) * fw * 0.9, [x, z] = along2 ? [h.cx + u, h.cz + fz * (d / 2 + 1 + k % 3)] : [h.cx + fx * (w / 2 + 1 + k % 3), h.cz + u];
-        put("lawn", new THREE9.ConeGeometry(0.35, 0.7 + k % 2 * 0.4, 5), x, 0.35, z, k, jit(6126136, k * 0.37 % 1, 0.3));
-      }
     }
     for (const f of nb.fences) {
       const n = Math.floor(f.len / 0.35);
@@ -12270,11 +12394,15 @@ function buildTown2(M, W, T2, g, SH) {
       put("post", new THREE9.BoxGeometry(0.08, 1.05, 0.08), m.x, 0.52, m.z, m.yaw, 6969928, 0, m.tilt);
       put("mail", new THREE9.CylinderGeometry(0.13, 0.13, 0.45, 8, 1, false, 0, Math.PI).rotateX(Math.PI / 2).rotateZ(Math.PI / 2), m.x + Math.sin(m.tilt) * 0.5, 1.05, m.z, m.yaw, 3820122);
     }
-    for (const t of nb.trees) {
-      put("bark", new THREE9.CylinderGeometry(0.12 * t.s, 0.18 * t.s, 2.6 * t.s, 6), t.x, 1.3 * t.s, t.z, 0, 5917242);
-      put("leaf", new THREE9.IcosahedronGeometry(1.5 * t.s, 0), t.x, 3 * t.s, t.z, t.x, t.k ? 4876850 : 6978106);
-      put("leaf", new THREE9.IcosahedronGeometry(1 * t.s, 0), t.x + 0.6, 3.8 * t.s, t.z - 0.4, t.z, t.k ? 5601850 : 8030784);
-    }
+    whenKit(() => {
+      for (const t of nb.trees) {
+        const m = kitModel(t.k ? "nat_tree_oak_dark" : "nat_tree_default_dark", "h", 5.6 * t.s, SH);
+        if (!m) continue;
+        m.position.set(t.x, 0, t.z);
+        m.rotation.y = t.x * 1.3;
+        g.add(m);
+      }
+    });
     for (const s of STREETS) {
       const hz = s[2] === s[4], L = hz ? Math.abs(s[3] - s[1]) : Math.abs(s[4] - s[2]), cx = (s[1] + s[3]) / 2, cz = (s[2] + s[4]) / 2;
       if (s[0] === "Old Mill Rd") continue;
@@ -12362,10 +12490,7 @@ function buildTown2(M, W, T2, g, SH) {
       if (!free(x, z)) continue;
       if (nearFarm(x, z, 16)) continue;
       const patch = Math.sin(x * 0.045 + 1.3) * Math.cos(z * 0.04) + 0.4 * Math.sin(x * 0.13 - z * 0.11);
-      if (inField(x, z)) {
-        if (r() < 0.8) tufts.push([x, z, R2(0.6, 1.3)]);
-        continue;
-      }
+      if (inField(x, z)) continue;
       continue;
       if (patch > 0.15 || Math.abs(Math.abs(x) - 82) < 4 || Math.abs(z + 268) < 5) trees.push([x, z, R2(0.8, 1.5), r() < 0.55 ? 0 : 1]);
       else if (r() < 0.6) brush.push([x, z, R2(0.5, 1.4)]);
@@ -12496,7 +12621,7 @@ function buildTown2(M, W, T2, g, SH) {
   for (const s of storeSigns(W)) {
     const p = pal[s.kind] || ["#ccc", "#222", 0], tex = weathered(s.text, p[0], p[1], p[2], s.x * 13 + s.z * 7 | 0), fm = new THREE9.MeshStandardMaterial({ map: tex, roughness: 0.95, metalness: 0, emissive: 16777215, emissiveMap: tex, emissiveIntensity: 0 });
     (out.signMats || (out.signMats = [])).push(fm);
-    const len = Math.min(s.max || 5, 1.2 + s.text.length * 0.28), m = mk(new THREE9.BoxGeometry(0.08, 0.9, len), [fm, signWood, signWood, signWood, signWood, signWood], s.x + s.face * 0.05, 3.3, s.z, g, false);
+    const len = Math.min(s.max || 5, 1.2 + s.text.length * 0.28), m = mk(new THREE9.BoxGeometry(0.08, 0.9, len), [fm, signWood, signWood, signWood, signWood, signWood], s.x + s.face * 0.75, 3.75, s.z, g, false);
     m.rotation.z = s.face * 0.03;
     m.rotation.x = s.x * 7 % 1 * 0.06;
     if (s.face < 0) m.rotation.y = Math.PI;
@@ -12756,7 +12881,7 @@ function buildTownView(M, W, T2, scene) {
       const ln = Math.min(3, L - s), cx = along2 ? w.x0 + s + ln / 2 : (w.x0 + w.x1) / 2, cz = along2 ? (w.z0 + w.z1) / 2 : w.z0 + s + ln / 2, h = w.h - n++ % 3 * 0.25;
       const fm = mk(along2 ? tbox(ln, h, w.z1 - w.z0, 0.5) : tbox(w.x1 - w.x0, h, ln, 0.5), n % 2 ? planks : scrap, cx, h / 2, cz);
       {
-        const nm = n % 4 === 1 ? "sv_structure_metal_wall" : "sv_fence_fortified", hx = along2 ? ln / 2 : (w.x1 - w.x0) / 2 + 0.06, hz = along2 ? (w.z1 - w.z0) / 2 + 0.06 : ln / 2;
+        const nm = "sv_fence_fortified", hx = along2 ? ln / 2 : (w.x1 - w.x0) / 2 + 0.06, hz = along2 ? (w.z1 - w.z0) / 2 + 0.06 : ln / 2;
         whenKit(() => {
           if (boxModel(g, nm, cx - hx, cx + hx, cz - hz, cz + hz, h, along2 ? 0 : 1, along2 ? 1 : 0, { SH })) fm.visible = false;
         });
@@ -12981,6 +13106,7 @@ function buildTownView(M, W, T2, scene) {
     Trader: [9058906, 3028032, 3811866, 1],
     Kid: null
   };
+  const _uq = new THREE10.Quaternion();
   const qTool = (h, c) => {
     if (!h.hand) return null;
     let t = null;
@@ -13005,11 +13131,18 @@ function buildTownView(M, W, T2, scene) {
       const w = new THREE10.Mesh(new THREE10.CircleGeometry(0.15, 12).rotateX(-Math.PI / 2), M.get("bucketWater", { color: 3166314, rough: 0.1 }));
       w.position.y = -0.12;
       t.add(w);
+      const hd = new THREE10.Mesh(new THREE10.TorusGeometry(0.155, 8e-3, 4, 14, Math.PI), M.get("bucket"));
+      hd.position.y = -0.08;
+      t.add(hd);
     }
     if (!t) return null;
     const holder = new THREE10.Group();
     holder.add(t);
     holder.rotation.set(0, 0, -Math.PI / 2);
+    if (c.act === "carry") {
+      holder.rotation.set(0, 0, 0);
+      holder.userData.upright = 1;
+    }
     holder.position.set(0, 0.08, 0.02);
     h.hand.add(holder);
     return holder;
@@ -13207,6 +13340,11 @@ function buildTownView(M, W, T2, scene) {
           h.group.rotation.y = q.yaw || 0;
           if (h.tool) h.tool.visible = !!q.act && q.act !== "eat" && q.act !== "play" && (spd2 < 0.3 || q.act === "carry");
           qAnimate(h, dt, spd2, { act: spd2 < 0.3 ? q.act : null, carry: q.act === "carry", night: dark > 0.5 }, dd > 45 ? 4 : dd > 20 ? 2 : 1);
+          if (h.tool && h.tool.userData.upright && h.tool.visible && h.tool.parent) {
+            h.group.updateMatrixWorld(true);
+            h.tool.parent.getWorldQuaternion(_uq);
+            h.tool.quaternion.copy(_uq.invert());
+          }
           continue;
         }
         if (dd > 45 && (frame + i) % 4) continue;
@@ -17186,6 +17324,72 @@ var View = class {
       wg.add(r.grp);
       this.bviews.push({ b, lamp: r.lamp, light: r.light });
     }
+    if (W.house) {
+      const H0 = W.house, door = W.openings.find((o) => o.b === H0.id && o.type === "door"), dx = door ? door.cx : H0.x, oz = H0.z1 + CFG.WALL_T / 2 + 0.04;
+      const ct = (w, h, draw) => {
+        const c = document.createElement("canvas");
+        c.width = w;
+        c.height = h;
+        draw(c.getContext("2d"), w, h);
+        const t = new THREE18.CanvasTexture(c);
+        t.colorSpace = THREE18.SRGBColorSpace;
+        t.anisotropy = 4;
+        return t;
+      };
+      const board = (tex, w, h, x, y, z) => {
+        const m = new THREE18.Mesh(new THREE18.PlaneGeometry(w, h), new THREE18.MeshStandardMaterial({ map: tex, roughness: 0.95 }));
+        m.position.set(x, y, z);
+        wg.add(m);
+        const bk = new THREE18.Mesh(new THREE18.BoxGeometry(w + 0.1, h + 0.1, 0.06), M.get("signWood", { tex: "planks", color: 10126438, rough: 1 }));
+        bk.position.set(x, y, z - 0.04);
+        wg.add(bk);
+        return m;
+      };
+      board(ct(512, 128, (x, w, h) => {
+        x.fillStyle = "#4a5a3a";
+        x.fillRect(0, 0, w, h);
+        x.strokeStyle = "#d8cfa8";
+        x.lineWidth = 6;
+        x.strokeRect(6, 6, w - 12, h - 12);
+        x.fillStyle = "#efe6c4";
+        x.textAlign = "center";
+        x.font = "bold 44px serif";
+        x.fillText("PINE HOLLOW CAMPGROUND", w / 2, 58);
+        x.font = "bold 30px sans-serif";
+        x.fillText("CHECK-IN \xB7 OFFICE \xB7 RESTROOMS", w / 2, 102);
+      }), 3.4, 0.85, dx, 2.62, oz + 0.04);
+      board(ct(256, 128, (x, w, h) => {
+        x.fillStyle = "#24508a";
+        x.fillRect(0, 0, w, h);
+        x.fillStyle = "#fff";
+        x.textAlign = "center";
+        x.font = "bold 30px sans-serif";
+        x.fillText("RESTROOMS", w / 2, 40);
+        x.font = "bold 56px sans-serif";
+        x.fillText("M  |  W", w / 2, 108);
+      }), 0.6, 0.3, dx + 1.35, 1.6, oz + 0.02);
+      whenKit(() => {
+        const put = (nm, x, z, ry, w, h, d) => {
+          const m = fitModel(nm, w, h, d, SH, 0) || null;
+          void (nm, w, h, d);
+          if (!m) return;
+          m.position.set(x, 0, z);
+          m.rotation.y = ry;
+          wg.add(m);
+        };
+        const bx = H0.x1 - 0.7;
+        put("fur_toilet", bx, H0.z0 + 0.65, 0, 0.5, 0.8, 0.7);
+        put("fur_toilet", bx - 1.3, H0.z0 + 0.65, 0, 0.5, 0.8, 0.7);
+        put("fur_bathroomSink", H0.x1 - 0.45, H0.z0 + 2.2, -Math.PI / 2, 0.6, 0.95, 0.5);
+        put("fur_bathroomSink", H0.x1 - 0.45, H0.z0 + 3.1, -Math.PI / 2, 0.6, 0.95, 0.5);
+        put("fur_desk", H0.x0 + 1.2, H0.z0 + 0.8, 0, 1.6, 0.78, 0.7);
+      });
+      {
+        const st = new THREE18.Mesh(new THREE18.BoxGeometry(0.06, 1.8, 1.1), M.get("stallM", { tex: "metal", color: 6978164, rough: 0.8, metal: 0.3 }));
+        st.position.set(H0.x1 - 1.35, 0.95, H0.z0 + 0.65);
+        wg.add(st);
+      }
+    }
     this.oviews = W.openings.map((o) => {
       const bd = buildBoards(M, o, T2);
       wg.add(bd.grp);
@@ -17245,6 +17449,31 @@ var View = class {
       this.stumpIdx = /* @__PURE__ */ new Map();
       trees.forEach(([n, i], k) => this.stumpIdx.set(i, k));
     }
+    whenKit(() => {
+      const NM = ["nat_tree_pineTallA", "nat_tree_pineTallB", "nat_tree_oak_dark", "nat_tree_default_dark"], HT = [7.6, 8.6, 6.6, 6.4];
+      (this.treeVars || []).forEach((v, vi) => {
+        const nm = NM[vi % NM.length], parts = KIT.parts.get(nm), b = KIT.size.get(nm), t = this.treeInst[vi];
+        if (!parts || !b || !t) return;
+        const geo = mergeGeometries(parts.map((p) => p.geo.clone()), true);
+        if (!geo) return;
+        const s = HT[vi % HT.length] / Math.max(0.01, b.max.y - b.min.y);
+        geo.translate(-(b.min.x + b.max.x) / 2, -b.min.y, -(b.min.z + b.max.z) / 2);
+        geo.scale(s, s, s);
+        const mats = parts.map((p) => p.mat);
+        v.trunk = geo;
+        v.foliage = null;
+        v.card = null;
+        v.kitMats = mats;
+        t.trunk.geometry = geo;
+        t.trunk.material = mats;
+        if (t.fol) {
+          t.fol.parent && t.fol.parent.remove(t.fol);
+          t.fol = null;
+        }
+      });
+      this.kitTrees = true;
+      if (this.lastS) this.syncLoot(this.lastS);
+    });
     {
       const rv = rockVariants(), rm = M.get("rock", { tex: "rock", rough: 1, flat: true, ns: 1.5, color: 13157564 });
       const rocks = W.rocks.filter((r) => !r.hidden), per = [[], [], []];
@@ -17508,6 +17737,7 @@ var View = class {
   }
   /** Apply loot-alive flags to instanced trees + props. */
   syncLoot(S2) {
+    this.lastS = S2;
     const dm = new THREE18.Object3D(), z = new THREE18.Matrix4().makeScale(0, 0, 0);
     for (const t of this.treeInst) {
       t.list.forEach(([n, i], k) => {
@@ -18256,7 +18486,7 @@ var View = class {
     g.add(inner);
     inner.rotation.y = n.rot;
     inner.scale.setScalar(n.s);
-    const trunk = new THREE18.Mesh(v.trunk, this.barkFall);
+    const trunk = new THREE18.Mesh(v.trunk, v.kitMats || this.barkFall);
     trunk.castShadow = this.tier.shadow > 0;
     inner.add(trunk);
     if (v.foliage) {
@@ -20036,6 +20266,9 @@ var PackGame = class {
     this.c.addEventListener("pointerup", (e) => {
       this.up(P(e));
     });
+    this.c.addEventListener("pointercancel", () => {
+      this.drag = null;
+    });
   }
   get me() {
     return this.g.me;
@@ -20222,7 +20455,8 @@ var PackGame = class {
     x.strokeStyle = "#e8f4f6";
     x.lineWidth = 4;
     x.stroke();
-    for (let i = 0; i < Math.min(n, 18); i++) {
+    const held = this.drag && this.drag.k === "bud" ? 1 : 0;
+    for (let i = 0; i < Math.min(n, 18) - held; i++) {
       const a = i * 2.39, r = 14 + i * 7 % 52;
       this.bud(150 + Math.cos(a) * r, 250 + Math.sin(a) * r, 13, i);
     }
@@ -20236,7 +20470,7 @@ var PackGame = class {
     x.fillStyle = "#f2e6c0";
     x.font = "600 14px system-ui";
     x.textAlign = "center";
-    x.fillText(`Jar: ${n / 2} bud${n === 2 ? "" : "s"}`, 150, 350);
+    x.fillText(`Jar: ${(n - held) / 2} bud${n - held === 2 ? "" : "s"}`, 150, 350);
     x.fillStyle = "#2b2f33";
     x.fillRect(296, 380, 168, 34);
     x.fillStyle = "#7fd36a";
@@ -20456,7 +20690,7 @@ var Game = class {
     this.bindUi();
     requestAnimationFrame(() => this.frame());
     setInterval(() => {
-      if (document.hidden) this.advance(performance.now());
+      if (document.hidden && this.mode === "host") this.advance(performance.now());
     }, 250);
     window.__game = this;
     this.OW_roadAt = roadAt;
@@ -21294,6 +21528,51 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       }
     }
   }
+  /** v7.7 PC-only HUD extras: live FPS (bottom-left) + the current story objective in gold (top centre). Hidden on touch/phone. */
+  pcHud(dt) {
+    if (isTouch) return;
+    if (!this.fpsEl) {
+      const f = this.fpsEl = document.createElement("div");
+      f.id = "fpsC";
+      f.style.cssText = "position:fixed;left:8px;bottom:6px;z-index:7;pointer-events:none;font:600 11px ui-monospace,monospace;color:#cfe8cf;background:#0008;padding:1px 6px;border-radius:4px;text-shadow:0 1px 2px #000";
+      document.body.appendChild(f);
+      const q = this.questEl = document.createElement("div");
+      q.id = "questHud";
+      q.style.cssText = "margin-top:5px;pointer-events:none;max-width:min(760px,56vw);text-align:center;font:700 14px system-ui,sans-serif;color:#e8b830;background:#14100acc;border:1px solid #b8902a88;border-radius:8px;padding:5px 14px;text-shadow:0 1px 2px #000;white-space:normal";
+      ($3("clock") || document.body).appendChild(q);
+      const ob = $3("obj");
+      if (ob) ob.style.display = "none";
+    }
+    this.fpsN = (this.fpsN || 0) + 1;
+    this.fpsT = (this.fpsT || 0) + dt;
+    if (this.fpsT >= 0.5) {
+      this.fpsEl.textContent = Math.round(this.fpsN / this.fpsT) + " FPS";
+      this.fpsN = 0;
+      this.fpsT = 0;
+    }
+    const me = this.me, S2 = this.S, show = this.mode !== "menu" && me && S2 && S2.phase === "playing";
+    this.fpsEl.style.display = this.mode === "menu" ? "none" : "";
+    if (!show) {
+      this.questEl.style.display = "none";
+      return;
+    }
+    this.qT = (this.qT || 0) - dt;
+    if (this.qT > 0) return;
+    this.qT = 0.4;
+    let txt = "";
+    try {
+      const q = questTarget(this.W, S2, me), o = objectiveText(this.W, S2, me) || "";
+      txt = (q ? q.label + " \u2014 " : "") + o.replace(/\s*\(\d+ m [NSEW]{1,2}\)/g, "").replace(/\s*\[E\]/g, "");
+    } catch (e) {
+      txt = "";
+    }
+    this.questEl.style.display = txt ? "" : "none";
+    if (this.questEl.dataset.t !== txt) {
+      this.questEl.dataset.t = txt;
+      this.questEl.textContent = "\u25C6 " + txt;
+      this.questEl.title = txt;
+    }
+  }
   /** v7.0 optional on-screen quest waypoint (toggle N) with distance; clamps to the screen edge when off-screen/behind. */
   updWp(S2, me) {
     {
@@ -21353,7 +21632,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       html = `<p class="say">${d.text}</p>`;
       opts = d.opts.map(([l, a]) => [l, () => {
         this.act("talk", { n: this.talkN, a });
-        if (a === "bye" || a === "nosale") this.closeMenu();
+        if (a === "bye" || a === "nosale" || a === "sorryout" || a === "gpass" || a === "gout") this.closeMenu();
         else {
           this.menuSig = "";
           setTimeout(() => {
@@ -21381,7 +21660,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       const obj = objectiveText(W, S2, me);
       const cust = NPCS.map((c, i) => isCustomer(i) ? `${c.n}${tw.dead && tw.dead[i] ? " (dead)" : tw.signed && tw.signed[i] ? " \u2714" : ""}` : null).filter(Boolean);
       const steps = ["Talk at the gate eye-slot", "Get the pot + soil from the hardware-store basement", "Take seeds from the dispensary plant", "Place the pot in YOUR shack by the gate (B \u2192 Grow tab \u2192 Grow pot) + plant", "Harvest", "Package into baggies", "Deliver 5 baggies to Gus", "Inside Harlow"];
-      html = `<h4>CURRENT OBJECTIVE</h4><p>${obj}</p><h4>HARLOW ENTRY QUEST</h4><p>${steps.map((t, i) => `${i < (tw.st | 0) ? "\u2611" : i === (tw.st | 0) ? "\u25B6" : "\u2610"} ${t}`).join("<br>")}</p>` + (tw.entry ? `<h4>BUSINESS</h4><p>Cash $${tw.cash} \xB7 faction standing ${tw.fac} \xB7 bags sold ${tw.sales}${tw.own ? " \xB7 you own your house" : ` \xB7 rent 5 bags, due day ${tw.rentDue}`}${tw.kick ? ' \xB7 <b style="color:#e88">KICKED OUT</b>' : ""}${tw.hostile ? ' \xB7 <b style="color:#e88">TOWN HOSTILE</b>' : ""}</p>` : "") + `<h4>TOWNSPEOPLE (\u2714 = your customer \xB7 ${cust.filter((c) => c.endsWith("\u2714")).length}/${cust.length}; Gus, the guards and the kids don't buy)</h4><p>${cust.join(" \xB7 ")}</p>` + (tw.ow && tw.ow.site ? `<h4>THE RESEARCH SITE</h4><p>${[[1, "Reach the Kessler research site gate"], [tw.ow.hq, "Find Vance's hideout (Kessler: the quarry camp, west of the road)"], [tw.ow.res, `Deal with Vance \u2014 raid, sneak in, or take his deal and betray him${tw.ow.res ? ` (${tw.ow.res})` : tw.ow.deal ? " (you took his deal \u2014 talk to Kessler at the intercom)" : ""}`], [tw.ow.gate, "Get Kessler to open the gate"], [tw.ow.blood, "Talk to Dr. Kessler inside \u2014 give your blood"]].map(([d, t]) => `${d ? "\u2611" : "\u2610"} ${t}`).join("<br>")}${tw.ow.blood ? "<br><i>To be continued (v7.7: the cure trials)</i>" : ""}</p>` : "") + `<h4>GROW POTS</h4><p>${[...S2.structs.values()].filter((q) => q.t === "pot").map((q, i) => {
+      html = `<h4>CURRENT OBJECTIVE</h4><p>${obj}</p><h4>HARLOW ENTRY QUEST</h4><p>${steps.map((t, i) => `${i < (tw.st | 0) ? "\u2611" : i === (tw.st | 0) ? "\u25B6" : "\u2610"} ${t}`).join("<br>")}</p>` + (tw.entry || tw.ow && tw.ow.gq ? `<h4>FACTION STANDING</h4><p>${repText(tw)}${tw.ow && tw.ow.gq === 1 ? "<br>\u25B6 Road gang job: bring them 3 raw meat (or 2 cooked)." : tw.ow && tw.ow.gq === 2 ? "<br>\u2611 Road gang: you are not hated any more" + (tw.ow.gs ? " \u2014 they buy baggies now." : " \u2014 offer them a free sample.") : ""}</p>` : "") + (tw.entry ? `<h4>BUSINESS</h4><p>Cash $${tw.cash} \xB7 faction standing ${tw.fac} \xB7 bags sold ${tw.sales}${tw.own ? " \xB7 you own your house" : ` \xB7 rent 5 bags, due day ${tw.rentDue}`}${tw.kick ? ' \xB7 <b style="color:#e88">KICKED OUT</b>' : ""}${tw.hostile ? ' \xB7 <b style="color:#e88">TOWN HOSTILE</b>' : ""}</p>` : "") + `<h4>TOWNSPEOPLE (\u2714 = your customer \xB7 ${cust.filter((c) => c.endsWith("\u2714")).length}/${cust.length}; Gus, the guards and the kids don't buy)</h4><p>${cust.join(" \xB7 ")}</p>` + (tw.ow && tw.ow.site ? `<h4>THE RESEARCH SITE</h4><p>${[[1, "Reach the Kessler research site gate"], [tw.ow.hq, "Find Vance's hideout (Kessler: the quarry camp, west of the road)"], [tw.ow.res, `Deal with Vance \u2014 raid, sneak in, or take his deal and betray him${tw.ow.res ? ` (${tw.ow.res})` : tw.ow.deal ? " (you took his deal \u2014 talk to Kessler at the intercom)" : ""}`], [tw.ow.gate, "Get Kessler to open the gate"], [tw.ow.blood, "Talk to Dr. Kessler inside \u2014 give your blood"]].map(([d, t]) => `${d ? "\u2611" : "\u2610"} ${t}`).join("<br>")}${tw.ow.blood ? "<br><i>To be continued (v7.7: the cure trials)</i>" : ""}</p>` : "") + `<h4>GROW POTS</h4><p>${[...S2.structs.values()].filter((q) => q.t === "pot").map((q, i) => {
         const g = tw.g && tw.g[q.id];
         return `Pot ${i + 1}: ${!g || !g.f ? "no soil" : !g.s ? "ready to plant" : potText(S2, g)}`;
       }).join(" \xB7 ") || `None placed yet${me.inv.pot ? " \u2014 B \u2192 Grow tab \u2192 Grow pot to place one (R rotates)" : ""}`}</p><h4>HOW TO</h4><p>${HOWTO.map(([h, t]) => `<b>${h}:</b> ${t}`).join("<br>")}</p><h4>NOTES & CLUES</h4><p>${(W.notes || []).filter((n, i) => (this.readNotes || /* @__PURE__ */ new Set()).has(i)).map((n) => n.text).join("<br>") || "None found yet."}</p><h4>RECENT MESSAGES</h4><div class="log">${(this.hud.log || []).slice().reverse().map((m) => `<div>${m.replace(/</g, "&lt;")}</div>`).join("")}</div>`;
@@ -21705,6 +21984,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
     this.lastRender = now;
     if (!document.hidden) this.advance(now);
     this.watchFps(dtv);
+    this.pcHud(dtv);
     const S2 = this.S, me = this.me, W = this.W;
     if (this.mode === "menu" || !me) {
       const a = now / 2e4, cam = this.view.camera;
