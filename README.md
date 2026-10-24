@@ -32,6 +32,12 @@
 - **Quest markers** on the minimap and full map, labels (Hardware, Dispensary, Harlow gate, Your shack), and an on-screen waypoint with distance (**N** toggles it).
 - **Ctrl+W safety:** crouch moved to **C** (Z toggles). Left Ctrl only crouches under Keyboard Lock in fullscreen, which the game enters on start. Leaving asks "Leave the game?" and autosaves first. The character screen moved to **K**.
 - **Fix:** horde zombies no longer "drop dead" in daytime. The cap cull skips horde and chasing zombies and only removes zombies out of sight (45 m+). Only real kills play the fall; despawns sink away quietly.
+- **Walk-in Harlow, no teleports**: the gate doors physically swing open (with a sound) when Gus lets you in ("Gate's open, come on in.") and whenever an allowed player walks up, then close behind you so zombies stay out. No warp, fade or loading anywhere — the E-warp is gone.
+- **Gus's house & your room**: a real 2-bedroom interior — openable front door, living room + kitchen, hall, Gus's (locked) bedroom and your room with a bed (sleep = heal + save), a storage chest and space to place pots, a torch or a bench. "Your room" is on the map and becomes the objective after you're let in. Hank's butcher shop and the house for sale are walk-in too; other houses stay closed.
+- **Harlow bustles**: 19 townsfolk with names, jobs and a daily routine on the game clock — they leave home in the morning, walk their street lanes to work (butcher chopping, guards patrolling the walls, farmers hoeing, carpenter hammering at the north wall, mechanic under a car, cook and laundry at the fire, water carrier with buckets, trader, medic, preacher, kids playing, Gus at the gate slot), eat lunch together at the cook fire, go home at dusk; at night only the guards are out; during a horde everyone hides. Look at someone to see name + job, E to talk. Far NPCs update less often (phone-friendly). Ambient life: chimney smoke, street lanterns at night, laundry lines, a chicken coop, market stalls.
+- **Packaging mini-game**: E at the shack bench opens a bench view — drag (or tap) a bud from the jar into the baggie, let the scale settle, drag along the zip (or tap SEAL); the bag drops onto the pile. Mouse + touch, Esc leaves. "Package all" unlocks after 6 by hand.
+- **Discoverability**: the objective line always names the exact action, key and count; context prompts whenever something is possible; one-time tips (shovel, pot, planting, harvest, packaging, rent); the journal has a HOW TO section for every mechanic.
+- **Phone HUD**: toasts have their own stacking area, inventory chips are a compact grid, the status warning sits below the inventory — checked at 390×844 and 844×390.
 
 ## v6.9 — the town of Harlow (Oct 23, 2026)
 - **Harlow**: follow the road north past the ruins to a walled fort block (10 houses per side, a gate, an eye-slot). Gus lives behind the gate.
@@ -155,7 +161,8 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
 | Character screen | K | STATS |
 | Quest waypoint on/off | N | — |
-| Open/close your shack door, use a pot (soil, seed, water, harvest) | E | USE |
+| Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed | E | USE |
+| Packaging bench: drag bud → baggie, drag zip / SEAL; leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
 | Place a grow pot | B → Grow tab → Grow pot (R rotates) | BUILD/CRAFT |
 | Minimap rotate / north-up; full map | M tap; hold M or Tab | tap minimap; press and hold it |
 | Pause (solo freezes time; co-op does not; autosaves) | Esc | Pause |
