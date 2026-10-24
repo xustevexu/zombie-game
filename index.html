@@ -249,7 +249,7 @@
 </div>
 <div id="menu" class="overlay">
   <div class="panel wide">
-    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.7</div>
+    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.7.1</div>
     <h2>Stage 1 &middot; Find shelter. Survive three nights. (hobby build)</h2>
     <p>You wake up in a tent. The dead walk at night. Scavenge wood, board up a ruined building and hold out until dawn&hellip; the first step toward building something bigger.</p>
     <div class="row"><input id="name" type="text" maxlength="14" placeholder="Your name" autocomplete="off"></div>
@@ -282,7 +282,7 @@
 
 <div id="pause" class="overlay hidden">
   <div class="panel wide">
-    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.7</small></h1>
+    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.7.1</small></h1>
     <h2 id="pauseNote">The game is paused.</h2>
     <div class="tools">
       <button class="btn" id="bResume">Resume</button>
@@ -1009,7 +1009,7 @@ function gangUpdate(sim, ow, ps, dt) {
         if (m[4] <= 0 && !meleeBlocked(sim.W, sim.S, m[0], m[1], t.x, t.z, t.y || 0)) {
           m[4] = 1.2;
           sim.emit("gatk", m[0], m[1], t.id, ow.gm.indexOf(m));
-          sim.hurt(t, 9 + Math.random() * 6);
+          sim.hurt(t, 9 + Math.random() * 6, "Road gang hit");
         }
       }
     }
@@ -1312,7 +1312,7 @@ function hqUpdate(sim, dt) {
         if (m[4] <= 0 && !meleeBlocked(sim.W, sim.S, m[0], m[1], t.x, t.z, t.y || 0)) {
           m[4] = m[6] ? 1 : 1.25;
           sim.emit("gatk", m[0], m[1], t.id, 100 + ow.hm.indexOf(m));
-          sim.hurt(t, m[6] ? 14 + Math.random() * 6 : 8 + Math.random() * 5);
+          sim.hurt(t, m[6] ? 14 + Math.random() * 6 : 8 + Math.random() * 5, "Raider hit");
         }
       }
     }
@@ -3587,7 +3587,7 @@ function updateAnimals(sim, dt) {
       sp = A2.run;
       if (nd < 1.1 && a.cd <= 0) {
         a.cd = 1.6;
-        sim.hurt(np, 8);
+        sim.hurt(np, 8, "Boar gored you");
         sim.emit("boar", a.x, a.z, a.id, np.id);
         a.t = 0;
         mode = 2;
@@ -4256,7 +4256,7 @@ function townUpdate(sim, dt) {
         p.nh = (p.nh || 0) - dt;
         if (p.nh <= 0) {
           p.nh = 1.4;
-          sim.hurt(p, 7);
+          sim.hurt(p, 7, "Townspeople attacking");
           if (!(p.nhw > S2.time)) {
             p.nhw = S2.time + 20;
             sim.toast(p.id, "Townspeople attacking \u2014 get clear of Harlow!");
@@ -4414,7 +4414,7 @@ var SLEEP_WAKE = 7 / 24;
 function sleepBlock(sim, p) {
   const S2 = sim.S, tw = S2.tw;
   if (tw && tw.horde) return "A horde is moving out there \u2014 you can't sleep now.";
-  for (const z of S2.zombies.values()) if (z.hp > 0 && Math.hypot(z.x - p.x, z.z - p.z) < 25) return "Zombies are too close to sleep.";
+  for (const z of S2.zombies.values()) if (z.hp > 0 && !z.bs === !isBelow(p.y) && inFort(z.x, z.z) === inFort(p.x, p.z) && Math.hypot(z.x - p.x, z.z - p.z) < 12 && !losBlocked(sim.W, S2, z.x, z.z, p.x, p.z)) return "Zombies are too close to sleep.";
   const tod = todOf(S2.time);
   if (tod > SLEEP_WAKE - 0.01 && tod < 0.7) return "Too early to sleep \u2014 come back in the evening.";
   return null;
@@ -5184,8 +5184,42 @@ var Sim = class {
     this.emit("bandage", p.x, p.z, p.id);
   }
   // ------------------------------------------------------------------ simulation step
-  hurt(p, amt) {
+  /** v7.7.1: after Continue / load / unpause: drop ghost zombies inside the shut fort and calm any that were chasing someone across the wall. */
+  revalidateZombies() {
+    const S2 = this.S, shut = !(S2.tw && S2.tw.gopen > 0.7);
+    for (const z of [...S2.zombies.values()]) {
+      if (z.bs) continue;
+      if (shut && inFort(z.x, z.z)) {
+        S2.zombies.delete(z.id);
+        this.emit("zgone", z.x, z.z, z.id);
+        continue;
+      }
+      const tp = S2.players.get(z.tgt);
+      if (z.mode === "chase" && (!tp || inFort(tp.x, tp.z) !== inFort(z.x, z.z))) {
+        z.mode = "wander";
+        z.tgt = 0;
+        z.atkCd = 1.5;
+      }
+    }
+  }
+  drainNote(p, why) {
+    p._ht = p._ht || {};
+    const now = this.S.time || 0;
+    if (!(p._ht[why] > now)) {
+      p._ht[why] = now + 20;
+      this.toast(p.id, why);
+    }
+  }
+  hurt(p, amt, why) {
     if (!p.alive) return;
+    if (why && amt > 0.5) {
+      p._ht = p._ht || {};
+      const now = this.S.time || 0;
+      if (!(p._ht[why] > now)) {
+        p._ht[why] = now + 1.5;
+        this.toast(p.id, `${why} (\u2212${Math.round(amt)} HP)`);
+      }
+    }
     if (p.inv) amt *= (p.inv.armorOn > 0 ? 0.65 : 1) * (p.inv.helmOn > 0 ? 0.85 : 1);
     p.hp -= amt;
     this.emit("hurt", p.x, p.z, p.id, Math.round(amt));
@@ -5245,6 +5279,7 @@ var Sim = class {
       if (p.sick > 0) {
         p.sick = Math.max(0, p.sick - dt);
         p.hp -= 0.5 * dt;
+        this.drainNote(p, "Food poisoning \u2014 losing health");
         if (p.hp <= 0) {
           p.hp = 0.01;
           this.hurt(p, 1);
@@ -5255,6 +5290,7 @@ var Sim = class {
       if (p.hu <= CFG.AUTO_EAT && p.inv.food > 0) this.eat(p, true);
       if (p.hu <= 0) {
         p.hp -= 0.8 * dt;
+        this.drainNote(p, "Starving \u2014 losing health");
         if (p.hp <= 0) {
           p.hp = 0.01;
           this.hurt(p, 1);
@@ -5345,7 +5381,13 @@ var Sim = class {
     }
     const players = [...S2.players.values()].filter((p) => p.alive);
     const nightNum = S2.nights + 1;
+    const gShut = !(S2.tw && S2.tw.gopen > 0.7);
     for (const z of S2.zombies.values()) {
+      if (!z.bs && gShut && inFort(z.x, z.z)) {
+        S2.zombies.delete(z.id);
+        this.emit("zgone", z.x, z.z, z.id);
+        continue;
+      }
       z.atkCd = Math.max(0, z.atkCd - dt);
       z.atk = Math.max(0, z.atk - dt);
       z.hit = Math.max(0, z.hit - dt);
@@ -5440,11 +5482,11 @@ var Sim = class {
       if (d > 0.1) z.yaw = angLerp(z.yaw, Math.atan2(-dx, -dz), Math.min(1, dt * 8));
       if (tp) {
         const pd = Math.hypot(tp.x - z.x, tp.z - z.z);
-        if (pd < 1.45 && z.atkCd <= 0 && !meleeBlocked(W, S2, z.x, z.z, tp.x, tp.z)) {
+        if (pd < 1.45 && z.atkCd <= 0 && inFort(tp.x, tp.z) === inFort(z.x, z.z) && !meleeBlocked(W, S2, z.x, z.z, tp.x, tp.z)) {
           z.atkCd = 1.1;
           z.atk = 0.4;
           this.emit("zatk", z.x, z.z, z.id, tp.id);
-          this.hurt(tp, 8 + nightNum * 1.5);
+          this.hurt(tp, 8 + nightNum * 1.5, "Zombie hit");
         }
         if (boardOp >= 0 && d < 1.3 && z.atkCd <= 0) {
           const s = S2.op[boardOp];
@@ -20633,6 +20675,7 @@ function applySave(sim, me, d, snapPlace2) {
   S2.sver++;
   for (const id of S2.structs.keys()) S2.nextSid = Math.max(S2.nextSid, id + 1);
   migrateSlots(sim.W, S2);
+  if (sim.revalidateZombies) sim.revalidateZombies();
   const m = d.me;
   Object.assign(me, { x: m.x, z: m.z, yaw: m.yaw, hp: m.hp, hu: m.hu, st: m.st, ax: m.ax, xp: m.xp, lv: m.lv, pts: m.pts, stats: m.stats, sk: m.sk || {}, rp: m.rp });
   ITEMS.forEach((k, i) => {
@@ -20943,6 +20986,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
     if (p === this.paused) return;
     this.paused = p;
     this.pauseT = performance.now();
+    if (!p && this.sim && this.mode !== "client" && this.sim.revalidateZombies) this.sim.revalidateZombies();
     $3("pause").classList.toggle("hidden", !p);
     $3("pauseNote").textContent = this.mode === "solo" ? "The game is paused." : "Co-op: the world keeps running while you look at this menu \u2014 find a safe spot first!";
     this.input.enabled = !p && $3("end").classList.contains("hidden");
