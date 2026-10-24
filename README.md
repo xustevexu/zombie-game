@@ -7,6 +7,15 @@
 - `src/*.js` readable source (config, world, sim, net, view, ui, main, build, structs, stats, minimap, chars, props, audio) + `src/template.html`. Rebuild: `node build.mjs` (needs esbuild in /workspace/buildtools).
 - `tests/` Playwright/Node checks. `shots/` screenshots.
 
+## v7.3 — the open world, the road to Kessler, co-op avatars (Oct 24, 2026)
+- **Co-op avatars** are now the Quaternius animated characters (same as the townspeople), with walking, crouching and swinging animations kept in sync over the network.
+- **No more hard borders.** The land outside Harlow streams in as 64 m chunks (trees, rocks and bushes from Kenney's Nature Kit, all solid) out to a rocky ridge ~1 km away. Low-tier phones draw 5x5 chunks, Medium/High 7x7.
+- **The road out of Harlow** runs ~820 m north to the fenced **Kessler research site**. On the way: a **crashed car with skeletons and a note**, a **police roadblock**, an **overrun camp** (zombies rise when you get close), and a **hidden cabin** in the woods west of the road. Notes at the crash, roadblock and cabin (or asking the mayor about the road) reveal the research-site waypoint; there's no waypoint before that. Reaching the gate plays a short scene — the site itself is the next batch.
+- **Road gang:** three raiders guard the road. When they stop you: **pay** ($20, 2 food or 3 scrap), **talk** (better odds as you level), **fight** (they hit hard; each one drops cash, scrap and food) or **flee**. Paying holds for the day.
+- **CC0 assets:** Kenney car, suburban, commercial, road, survival and nature kits (the road cars, the roadblock, the gang van, tents, the research-site props and the wild scatter) and Quaternius deer, raccoon, boar and chicken (animated; the boxy chicken is gone; the rabbit became a raccoon since there is no CC0 animated quadruped rabbit). Credits in `assets/CREDITS.md`.
+- **Zombies** now path round to an opening, or bash a closed door or your wall when there's no way round.
+- Not done (in `next_batch.md`): the town's own buildings, the fort and the town streets are still the existing models (their interiors, loot and colliders are built on them); the minimap only covers the town; the roadside poles and the farm wrecks have no colliders; the inside of the research site.
+
 ## v7.2 — real people, sleep, slower days (Oct 24, 2026)
 - **Day length is now 7.5 real minutes** (was 3): `DAY_LEN` 450 s. Hunger and thirst drain per real second, so per real minute they are unchanged. Grow-pot stages take 3 real minutes (was 2.5). NPC schedules follow the clock and still line up; horde nights are counted in game days, so they come ~2.5x less often in real time; weekly rent is 7 game days (~52 real minutes).
 - **Sleep:** use your bed at night (after ~5 PM) to fade out and wake at 7 AM; time, plants, hunger and NPC schedules move on. Blocked with a horde on, a zombie within 25 m, or in daytime. Co-op: everyone has to be in bed.
@@ -178,6 +187,7 @@ Fix: you now **auto-eat** from your pack when hunger <= 15; the HUD shows a stat
 | Build menu | B (1-9, 0 pick a piece; Tab / T wood<->scrap; R rotate; LMB place; RMB or Esc cancel; X dismantle) | BUILD, then tap pieces + PLACE / ROTATE / CANCEL |
 | Character screen | K | STATS |
 | Quest waypoint on/off | N | — |
+| Road gang: Pay / Talk / Fight / Flee (opens when they stop you) | E, then 1-4 | ACT, then tap |
 | Open/close your shack door or a house front door, use a pot (soil, seed, water, harvest), sleep in your bed (night only: skips to 7 AM) | E | USE |
 | Packaging bench: drag bud → baggie, drag zip / SEAL, Take out (returns the portion); leave | mouse drag, Space fills/seals; Esc or E | drag / tap, SEAL, Leave |
 | Place a grow pot (the ghost follows the crosshair to the floor; look down to place it as close as ~0.6 m) | B → Grow tab → Grow pot (R rotates, LMB places) | BUILD/CRAFT, then PLACE |
