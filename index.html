@@ -254,7 +254,7 @@
 </div>
 <div id="menu" class="overlay">
   <div class="panel wide">
-    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.8.0</div>
+    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.9.0</div>
     <h2>Wake up. Find shelter. Survive.</h2>
     <p>You wake up in a tent. The world, seems to have changed overnight. The dead walk at night. Scavenge wood, board up a ruined building and hold out until dawn&hellip; the first step toward building something bigger.</p>
     <div class="row"><input id="name" type="text" maxlength="14" placeholder="Your name" autocomplete="off"></div>
@@ -287,7 +287,7 @@
 
 <div id="pause" class="overlay hidden">
   <div class="panel wide">
-    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.8.0</small></h1>
+    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.9.0</small></h1>
     <h2 id="pauseNote">The game is paused.</h2>
     <div class="tools">
       <button class="btn" id="bResume">Resume</button>
@@ -315,10 +315,10 @@
 </div>
 
 <script type="module">
-// src/main.js
+// ../game/src/main.js
 import * as THREE19 from "three";
 
-// src/config.js
+// ../game/src/config.js
 var CFG = {
   DAY_LEN: 450,
   // v7.2 (t164u): seconds per full day/night cycle (7.5 min, was 3 min)
@@ -406,7 +406,7 @@ function clockStr(t) {
   return h12 + ":" + String(m % 60).padStart(2, "0") + " " + (h < 12 ? "AM" : "PM");
 }
 
-// src/town2.js
+// ../game/src/town2.js
 var BSM_FL = -2.8;
 var BELOW = -1.65;
 var isBelow = (y) => (y || 0) < BELOW;
@@ -644,7 +644,7 @@ function storeSigns(W) {
   return out;
 }
 
-// src/openworld.js
+// ../game/src/openworld.js
 var CH = 64;
 var EDGE = { x0: -1150, x1: 1150, z0: -1500, z1: 650 };
 var ROAD = [[50, -206], [90, -216], [114, -268], [125, -380], [112, -470], [100, -560], [108, -660], [148, -790], [168, -920], [170, -982]];
@@ -705,7 +705,7 @@ function roadAt(along2) {
 }
 var POLES = [];
 var RSIGNS = [];
-for (let a = 30, k = 0; a < ROAD_LEN - 20; a += 45, k++) {
+for (let a = 30, k = 0; a < ROAD_LEN - 20; a += 60, k++) {
   const p = roadAt(a), nx = Math.cos(p.yaw), nz = -Math.sin(p.yaw), farSet = Object.values(SPOTS).some((q) => Math.hypot(q.x - p.x, q.z - p.z) < 14);
   if (farSet) continue;
   POLES.push({ x: p.x + nx * 7, z: p.z + nz * 7, yaw: p.yaw });
@@ -1200,7 +1200,7 @@ function owTarget(S2) {
   return { x: SITE.gate.x, z: SITE.gate.z + 3, label: "Kessler research site" };
 }
 
-// src/hq.js
+// ../game/src/hq.js
 var HQ_HP = 70;
 var BOSS_HP = 300;
 var HQ_LEASH = 75;
@@ -1449,7 +1449,7 @@ function hqInteract(S2, me, cand) {
   if (ow.hm && !ow.res && Math.hypot(me.x - HQ_BOX.x, me.z - HQ_BOX.z) < 3) cand(HQ_BOX.x, HQ_BOX.z, 2.2, { k: "hq", a: "box", i: 0, text: ow.boomT > 0 ? "The fuse is burning \u2014 RUN" : ow.h && ow.h.st ? "Vance's strongbox (not while they're watching)" : "Vance's strongbox \u2014 open it and rig the fuel stash (quietly)", ok: !(ow.h && ow.h.st) && !(ow.boomT > 0) }, 0.6);
   const B = ow.hm && boss(ow);
   if (B && B[3] > 0 && !ow.res && ow.h && (ow.h.st === 1 || ow.h.st === 3)) cand(B[0], B[1], 3.2, { k: "npc", i: VANCE, text: "Talk to Vance (gang boss)", ok: true }, 0.8);
-  if (ow.site && !ow.gate) cand(SITE.gate.x + 3.4, SITE.gate.z + 0.4, 2.6, ow.gbDead ? { k: "npc", i: INTERCOM, text: "Press the gate intercom", ok: true } : { k: "npc", i: INTERCOM, text: "Kill the brute at the gate first \u2014 nobody will answer with it out here", ok: false }, 0.6);
+  if (ow.site && !ow.gate) cand(SITE.gate.x + 3.6, SITE.gate.z + 0.6, 2.6, ow.gbDead ? { k: "npc", i: INTERCOM, text: "Press the gate intercom", ok: true } : { k: "npc", i: INTERCOM, text: "Kill the brute at the gate first \u2014 nobody will answer with it out here", ok: false }, 0.6);
   if (ow.gate) for (const s of STAFF) cand(s.x, s.z, 2.8, { k: "npc", i: s.id, text: `Talk to ${s.n} (${s.job})`, ok: true }, 0.5);
 }
 function hqUse(sim, p, a) {
@@ -1588,7 +1588,7 @@ function hqTarget(S2, me) {
   if (!ow || !ow.site) return null;
   if (!ow.res) {
     if (ow.deal && (me && me.inv && me.inv.vial > 0)) return ow.hq ? { x: HQ_BOSS.x, z: HQ_BOSS.z, label: "Vance (hand over the vial)" } : null;
-    if (ow.deal) return { x: SITE.gate.x + 3.4, z: SITE.gate.z + 2, label: "Kessler gate intercom" };
+    if (ow.deal) return { x: SITE.gate.x + 3.6, z: SITE.gate.z + 0.6, label: "Kessler gate intercom" };
     return ow.hq ? { x: HQ.x1 + 3, z: (HQ.gz0 + HQ.gz1) / 2, label: "Vance's hideout" } : null;
   }
   if (!ow.gate) return { x: SITE.gate.x, z: SITE.gate.z + 3, label: "Kessler research site gate" };
@@ -1596,7 +1596,7 @@ function hqTarget(S2, me) {
   return null;
 }
 
-// src/town.js
+// ../game/src/town.js
 var TOWN = { FX: 34, FZ0: -250, FZ1: -160, GATE: 2.5, STREET: 9, SIGN: { x: 0, z: -84 } };
 var GROW_T = 180;
 function inBounds(x, z) {
@@ -2160,7 +2160,7 @@ function digBlock(W, x, z, y) {
 }
 var DIG_CD = 90;
 
-// src/world.js
+// ../game/src/world.js
 var { WALL_T: T, OPEN_W } = CFG;
 function buildWorld(seed) {
   const rnd2 = mulberry32(seed);
@@ -2672,7 +2672,7 @@ function findInteract(W, S2, me) {
   return best;
 }
 
-// src/stats.js
+// ../game/src/stats.js
 var STAT_KEYS = ["str", "end", "agi", "for", "per", "cra"];
 var STAT_MAX = 10;
 var STATS = {
@@ -2736,7 +2736,7 @@ function useSkill(p, k, n = 1) {
   return l1 > l0 ? { lv: l1, perks: PERKS.filter((q) => q.k === k && q.lv > l0 && q.lv <= l1) } : null;
 }
 
-// src/build.js
+// ../game/src/build.js
 var CELL = 2;
 var PIECES = {
   wall: { n: "Wall", cls: "edge", key: "1", cost: [{ wood: 2 }, { wood: 1, scrap: 2 }], hp: [160, 420], h: 2.6, tiers: true, d: "Solid wall. Zombies must break it." },
@@ -3067,7 +3067,7 @@ function findInteractAll(W, S2, me) {
   return best;
 }
 
-// src/minimap.js
+// ../game/src/minimap.js
 var FC = 10;
 var FW = Math.ceil((EDGE.x1 - EDGE.x0) / FC);
 var FH = Math.ceil((EDGE.z1 - EDGE.z0) / FC);
@@ -3555,7 +3555,7 @@ var Minimap = class {
   }
 };
 
-// src/wildlife.js
+// ../game/src/wildlife.js
 var ANIMALS = [
   { n: "deer", hp: 40, r: 0.45, walk: 1.3, run: 7, scare: 10, meat: 3, hide: 1, xp: 14, cap: 3 },
   { n: "raccoon", hp: 12, r: 0.25, walk: 1, run: 7.5, scare: 6, meat: 1, hide: 0, xp: 6, cap: 3 },
@@ -3652,7 +3652,7 @@ function updateAnimals(sim, dt) {
       gx = np.x;
       gz = np.z;
       sp = A2.run;
-      if (nd < 1.1 && a.cd <= 0) {
+      if (nd < 1.1 && a.cd <= 0 && Math.abs(np.y || 0) < 1 && !meleeBlocked(sim.W, sim.S, a.x, a.z, np.x, np.z)) {
         a.cd = 1.6;
         sim.hurt(np, 8, "Boar gored you");
         sim.emit("boar", a.x, a.z, a.id, np.id);
@@ -3731,7 +3731,7 @@ function hitAnimals(sim, p, fx, fz, dmg) {
   return true;
 }
 
-// src/townsim.js
+// ../game/src/townsim.js
 var RECIPES = [
   { id: "planter", n: "Wooden planter box", c: { wood: 6 }, out: { pot: 1 }, d: "A grow pot (wood)." },
   { id: "bucket", n: "Scrap bucket pot", c: { scrap: 3 }, out: { pot: 1 }, d: "A grow pot (scrap)." },
@@ -4516,7 +4516,7 @@ function trySleep(sim, p, toast) {
   return toast(`You sleep ${Math.round(hrs)} hours. Morning. Healed, game saved \u2014 you'll wake here if you die.`);
 }
 
-// src/sim.js
+// ../game/src/sim.js
 function newState(W) {
   return {
     time: CFG.DAY_LEN * CFG.START_T,
@@ -5421,7 +5421,7 @@ var Sim = class {
   /** v7.3 set-piece zombies (overrun camp). */
   spawnZombieAt(x, z) {
     const S2 = this.S, q = collide(this.W, S2, x, z, CFG.ZOMBIE_R), id = S2.nextZid++;
-    S2.zombies.set(id, { id, x: q.x, z: q.z, yaw: Math.random() * 6.28, hp: 70, mode: "wander", tgt: 0, wx: q.x, wz: q.z, wt: 0, atkCd: 0, atk: 0, hit: 0, bt: 0, spd: 0.9 + Math.random() * 0.3 });
+    S2.zombies.set(id, { id, x: q.x, z: q.z, yaw: Math.random() * 6.28, hp: 140, mode: "wander", tgt: 0, wx: q.x, wz: q.z, wt: 0, atkCd: 0, atk: 0, hit: 0, bt: 0, spd: 0.9 + Math.random() * 0.3 });
   }
   collideAt(x, z, r) {
     return collide(this.W, this.S, x, z, r);
@@ -5437,7 +5437,7 @@ var Sim = class {
       const q = collide(W, S2, x, z, CFG.ZOMBIE_R);
       if (Math.hypot(q.x - x, q.z - z) > 0.01) continue;
       const id = S2.nextZid++;
-      S2.zombies.set(id, { id, x, z, yaw: Math.random() * 6.28, hp: 70, mode: "wander", tgt: 0, wx: x, wz: z, wt: 0, atkCd: 0, atk: 0, hit: 0, bt: 0, spd: 0.9 + Math.random() * 0.3 });
+      S2.zombies.set(id, { id, x, z, yaw: Math.random() * 6.28, hp: 140, mode: "wander", tgt: 0, wx: x, wz: z, wt: 0, atkCd: 0, atk: 0, hit: 0, bt: 0, spd: 0.9 + Math.random() * 0.3 });
       return;
     }
   }
@@ -5447,7 +5447,7 @@ var Sim = class {
     this.t.spawn -= dt;
     this.t.cull -= dt;
     if (this.t.spawn <= 0) {
-      this.t.spawn = S2.night ? 1.4 : 6;
+      this.t.spawn = S2.night ? 1.4 : 12;
       if (S2.zombies.size < cap) this.spawnZombie();
     }
     let nNorm = 0;
@@ -5793,7 +5793,7 @@ function objectiveText(W, S2, me) {
   return `Search the campground check-in office (${dirTo(H)}) \u2014 maybe there is a phone or a radio.`;
 }
 
-// src/hotbar.js
+// ../game/src/hotbar.js
 var HB_N = 9;
 var HD = { axe: 1, food: 2, band: 3, b: 4, meat: 5, cooked: 6, bow: 7, shovel: 8, gun: 9 };
 var $ = (id) => document.getElementById(id);
@@ -6150,6 +6150,13 @@ var Hotbar = class {
     if (me.inv.meat > 0) this.add({ k: "meat" });
     if (me.inv.cooked > 0) this.add({ k: "cooked" });
     if (me.inv.shovel > 0) this.add({ k: "shovel" });
+    for (const [k, ok] of [["food", me.inv.food > 0], ["band", me.inv.cloth >= 2], ["meat", me.inv.meat > 0], ["cooked", me.inv.cooked > 0]]) if (!ok) {
+      const j = this.has(k);
+      if (j >= 0) {
+        this.slots[j] = null;
+        this.sig = "";
+      }
+    }
     if (!(me.inv.shovel > 0)) {
       const j = this.has("shovel");
       if (j >= 0) {
@@ -6248,7 +6255,7 @@ var Hotbar = class {
   }
 };
 
-// src/net.js
+// ../game/src/net.js
 var ALPHABET = "ABCDEFGHJKMNPQRSTUVWXYZ23456789";
 var makeCode = () => Array.from({ length: 5 }, () => ALPHABET[Math.floor(Math.random() * ALPHABET.length)]).join("");
 var netAvailable = () => typeof window !== "undefined" && typeof window.Peer === "function";
@@ -6497,7 +6504,7 @@ var Net = class {
   }
 };
 
-// src/story.js
+// ../game/src/story.js
 import * as THREE from "three";
 var canvasTex = (w, h, f) => {
   const c = document.createElement("canvas");
@@ -6639,13 +6646,13 @@ function buildStory(M, W, T2) {
   };
 }
 
-// src/townview.js
+// ../game/src/townview.js
 import * as THREE10 from "three";
 
-// src/qanimals.js
+// ../game/src/qanimals.js
 import * as THREE2 from "three";
 
-// src/vendor/jsm/loaders/GLTFLoader.js
+// ../game/src/vendor/jsm/loaders/GLTFLoader.js
 import {
   AnimationClip,
   Bone,
@@ -6714,7 +6721,7 @@ import {
   InstancedBufferAttribute as InstancedBufferAttribute2
 } from "three";
 
-// src/vendor/jsm/utils/BufferGeometryUtils.js
+// ../game/src/vendor/jsm/utils/BufferGeometryUtils.js
 import {
   BufferAttribute,
   BufferGeometry,
@@ -6923,7 +6930,7 @@ function toTrianglesDrawMode(geometry, drawMode) {
   }
 }
 
-// src/vendor/jsm/loaders/GLTFLoader.js
+// ../game/src/vendor/jsm/loaders/GLTFLoader.js
 var GLTFLoader = class extends Loader {
   constructor(manager) {
     super(manager);
@@ -9374,7 +9381,7 @@ function addPrimitiveAttributes(geometry, primitiveDef, parser) {
   });
 }
 
-// src/vendor/jsm/utils/meshopt_decoder.module.js
+// ../game/src/vendor/jsm/utils/meshopt_decoder.module.js
 var MeshoptDecoder = (function() {
   "use strict";
   var wasm_base = "b9H79Tebbbe8Fv9Gbb9Gvuuuuueu9Giuuub9Geueu9Giuuueuikqbeeedddillviebeoweuec:q;iekr;leDo9TW9T9VV95dbH9F9F939H79T9F9J9H229F9Jt9VV7bb8A9TW79O9V9Wt9F9KW9J9V9KW9wWVtW949c919M9MWVbeY9TW79O9V9Wt9F9KW9J9V9KW69U9KW949c919M9MWVbdE9TW79O9V9Wt9F9KW9J9V9KW69U9KW949tWG91W9U9JWbiL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9p9JtblK9TW79O9V9Wt9F9KW9J9V9KWS9P2tWV9r919HtbvL9TW79O9V9Wt9F9KW9J9V9KWS9P2tWVT949Wbol79IV9Rbrq:P8Yqdbk;3sezu8Jjjjjbcj;eb9Rgv8Kjjjjbc9:hodnadcefal0mbcuhoaiRbbc:Ge9hmbavaialfgrad9Radz1jjjbhwcj;abad9UhoaicefhldnadTmbaoc;WFbGgocjdaocjd6EhDcbhqinaqae9pmeaDaeaq9RaqaDfae6Egkcsfgocl4cifcd4hxdndndndnaoc9WGgmTmbcbhPcehsawcjdfhzalhHinaraH9Rax6midnaraHaxfgl9RcK6mbczhoinawcj;cbfaogifgoc9WfhOdndndndndnaHaic9WfgAco4fRbbaAci4coG4ciGPlbedibkaO9cb83ibaOcwf9cb83ibxikaOalRblalRbbgAco4gCaCciSgCE86bbaocGfalclfaCfgORbbaAcl4ciGgCaCciSgCE86bbaocVfaOaCfgORbbaAcd4ciGgCaCciSgCE86bbaoc7faOaCfgORbbaAciGgAaAciSgAE86bbaoctfaOaAfgARbbalRbegOco4gCaCciSgCE86bbaoc91faAaCfgARbbaOcl4ciGgCaCciSgCE86bbaoc4faAaCfgARbbaOcd4ciGgCaCciSgCE86bbaoc93faAaCfgARbbaOciGgOaOciSgOE86bbaoc94faAaOfgARbbalRbdgOco4gCaCciSgCE86bbaoc95faAaCfgARbbaOcl4ciGgCaCciSgCE86bbaoc96faAaCfgARbbaOcd4ciGgCaCciSgCE86bbaoc97faAaCfgARbbaOciGgOaOciSgOE86bbaoc98faAaOfgORbbalRbiglco4gAaAciSgAE86bbaoc99faOaAfgORbbalcl4ciGgAaAciSgAE86bbaoc9:faOaAfgORbbalcd4ciGgAaAciSgAE86bbaocufaOaAfgoRbbalciGglalciSglE86bbaoalfhlxdkaOalRbwalRbbgAcl4gCaCcsSgCE86bbaocGfalcwfaCfgORbbaAcsGgAaAcsSgAE86bbaocVfaOaAfgORbbalRbegAcl4gCaCcsSgCE86bbaoc7faOaCfgORbbaAcsGgAaAcsSgAE86bbaoctfaOaAfgORbbalRbdgAcl4gCaCcsSgCE86bbaoc91faOaCfgORbbaAcsGgAaAcsSgAE86bbaoc4faOaAfgORbbalRbigAcl4gCaCcsSgCE86bbaoc93faOaCfgORbbaAcsGgAaAcsSgAE86bbaoc94faOaAfgORbbalRblgAcl4gCaCcsSgCE86bbaoc95faOaCfgORbbaAcsGgAaAcsSgAE86bbaoc96faOaAfgORbbalRbvgAcl4gCaCcsSgCE86bbaoc97faOaCfgORbbaAcsGgAaAcsSgAE86bbaoc98faOaAfgORbbalRbogAcl4gCaCcsSgCE86bbaoc99faOaCfgORbbaAcsGgAaAcsSgAE86bbaoc9:faOaAfgORbbalRbrglcl4gAaAcsSgAE86bbaocufaOaAfgoRbbalcsGglalcsSglE86bbaoalfhlxekaOal8Pbb83bbaOcwfalcwf8Pbb83bbalczfhlkdnaiam9pmbaiczfhoaral9RcL0mekkaiam6mialTmidnakTmbawaPfRbbhOcbhoazhiinaiawcj;cbfaofRbbgAce4cbaAceG9R7aOfgO86bbaiadfhiaocefgoak9hmbkkazcefhzaPcefgPad6hsalhHaPad9hmexvkkcbhlasceGmdxikalaxad2fhCdnakTmbcbhHcehsawcjdfhminaral9Rax6mialTmdalaxfhlawaHfRbbhOcbhoamhiinaiawcj;cbfaofRbbgAce4cbaAceG9R7aOfgO86bbaiadfhiaocefgoak9hmbkamcefhmaHcefgHad6hsaHad9hmbkaChlxikcbhocehsinaral9Rax6mdalTmealaxfhlaocefgoad6hsadao9hmbkaChlxdkcbhlasceGTmekc9:hoxikabaqad2fawcjdfakad2z1jjjb8Aawawcjdfakcufad2fadz1jjjb8Aakaqfhqalmbkc9:hoxekcbc99aral9Radcaadca0ESEhokavcj;ebf8Kjjjjbaok;yzeHu8Jjjjjbc;ae9Rgv8Kjjjjbc9:hodnaeci9UgrcHfal0mbcuhoaiRbbgwc;WeGc;Ge9hmbawcsGgDce0mbavc;abfcFecjez:jjjjb8AavcUf9cu83ibavc8Wf9cu83ibavcyf9cu83ibavcaf9cu83ibavcKf9cu83ibavczf9cu83ibav9cu83iwav9cu83ibaialfc9WfhqaicefgwarfhodnaeTmbcmcsaDceSEhkcbhxcbhmcbhDcbhicbhlindnaoaq9nmbc9:hoxikdndnawRbbgrc;Ve0mbavc;abfalarcl4cu7fcsGcitfgPydlhsaPydbhzdnarcsGgPak9pmbavaiarcu7fcsGcdtfydbaxaPEhraPThPdndnadcd9hmbabaDcetfgHaz87ebaHcdfas87ebaHclfar87ebxekabaDcdtfgHazBdbaHclfasBdbaHcwfarBdbkaxaPfhxavc;abfalcitfgHarBdbaHasBdlavaicdtfarBdbavc;abfalcefcsGglcitfgHazBdbaHarBdlaiaPfhialcefhlxdkdndnaPcsSmbamaPfaPc987fcefhmxekaocefhrao8SbbgPcFeGhHdndnaPcu9mmbarhoxekaocvfhoaHcFbGhHcrhPdninar8SbbgOcFbGaPtaHVhHaOcu9kmearcefhraPcrfgPc8J9hmbxdkkarcefhokaHce4cbaHceG9R7amfhmkdndnadcd9hmbabaDcetfgraz87ebarcdfas87ebarclfam87ebxekabaDcdtfgrazBdbarclfasBdbarcwfamBdbkavc;abfalcitfgramBdbarasBdlavaicdtfamBdbavc;abfalcefcsGglcitfgrazBdbaramBdlaicefhialcefhlxekdnarcpe0mbaxcefgOavaiaqarcsGfRbbgPcl49RcsGcdtfydbaPcz6gHEhravaiaP9RcsGcdtfydbaOaHfgsaPcsGgOEhPaOThOdndnadcd9hmbabaDcetfgzax87ebazcdfar87ebazclfaP87ebxekabaDcdtfgzaxBdbazclfarBdbazcwfaPBdbkavaicdtfaxBdbavc;abfalcitfgzarBdbazaxBdlavaicefgicsGcdtfarBdbavc;abfalcefcsGcitfgzaPBdbazarBdlavaiaHfcsGgicdtfaPBdbavc;abfalcdfcsGglcitfgraxBdbaraPBdlalcefhlaiaOfhiasaOfhxxekaxcbaoRbbgzEgAarc;:eSgrfhsazcsGhCazcl4hXdndnazcs0mbascefhOxekashOavaiaX9RcsGcdtfydbhskdndnaCmbaOcefhxxekaOhxavaiaz9RcsGcdtfydbhOkdndnarTmbaocefhrxekaocdfhrao8SbegHcFeGhPdnaHcu9kmbaocofhAaPcFbGhPcrhodninar8SbbgHcFbGaotaPVhPaHcu9kmearcefhraocrfgoc8J9hmbkaAhrxekarcefhrkaPce4cbaPceG9R7amfgmhAkdndnaXcsSmbarhPxekarcefhPar8SbbgocFeGhHdnaocu9kmbarcvfhsaHcFbGhHcrhodninaP8SbbgrcFbGaotaHVhHarcu9kmeaPcefhPaocrfgoc8J9hmbkashPxekaPcefhPkaHce4cbaHceG9R7amfgmhskdndnaCcsSmbaPhoxekaPcefhoaP8SbbgrcFeGhHdnarcu9kmbaPcvfhOaHcFbGhHcrhrdninao8SbbgPcFbGartaHVhHaPcu9kmeaocefhoarcrfgrc8J9hmbkaOhoxekaocefhokaHce4cbaHceG9R7amfgmhOkdndnadcd9hmbabaDcetfgraA87ebarcdfas87ebarclfaO87ebxekabaDcdtfgraABdbarclfasBdbarcwfaOBdbkavc;abfalcitfgrasBdbaraABdlavaicdtfaABdbavc;abfalcefcsGcitfgraOBdbarasBdlavaicefgicsGcdtfasBdbavc;abfalcdfcsGcitfgraABdbaraOBdlavaiazcz6aXcsSVfgicsGcdtfaOBdbaiaCTaCcsSVfhialcifhlkawcefhwalcsGhlaicsGhiaDcifgDae6mbkkcbc99aoaqSEhokavc;aef8Kjjjjbaok:llevu8Jjjjjbcz9Rhvc9:hodnaecvfal0mbcuhoaiRbbc;:eGc;qe9hmbav9cb83iwaicefhraialfc98fhwdnaeTmbdnadcdSmbcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcdtfaicd4cbaice4ceG9R7avcwfaiceGcdtVgoydbfglBdbaoalBdbaDcefgDae9hmbxdkkcbhDindnaraw6mbc9:skarcefhoar8SbbglcFeGhidndnalcu9mmbaohrxekarcvfhraicFbGhicrhldninao8SbbgdcFbGaltaiVhiadcu9kmeaocefhoalcrfglc8J9hmbxdkkaocefhrkabaDcetfaicd4cbaice4ceG9R7avcwfaiceGcdtVgoydbfgl87ebaoalBdbaDcefgDae9hmbkkcbc99arawSEhokaok:Lvoeue99dud99eud99dndnadcl9hmbaeTmeindndnabcdfgd8Sbb:Yab8Sbbgi:Ygl:l:tabcefgv8Sbbgo:Ygr:l:tgwJbb;:9cawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai86bbdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad86bbdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad86bbabclfhbaecufgembxdkkaeTmbindndnabclfgd8Ueb:Yab8Uebgi:Ygl:l:tabcdfgv8Uebgo:Ygr:l:tgwJb;:FSawawNJbbbbawawJbbbb9GgDEgq:mgkaqaicb9iEalMgwawNakaqaocb9iEarMgqaqNMM:r:vglNJbbbZJbbb:;aDEMgr:lJbbb9p9DTmbar:Ohixekcjjjj94hikadai87ebdndnaqalNJbbbZJbbb:;aqJbbbb9GEMgq:lJbbb9p9DTmbaq:Ohdxekcjjjj94hdkavad87ebdndnawalNJbbbZJbbb:;awJbbbb9GEMgw:lJbbb9p9DTmbaw:Ohdxekcjjjj94hdkabad87ebabcwfhbaecufgembkkk;siliui99iue99dnaeTmbcbhiabhlindndnJ;Zl81Zalcof8UebgvciV:Y:vgoal8Ueb:YNgrJb;:FSNJbbbZJbbb:;arJbbbb9GEMgw:lJbbb9p9DTmbaw:OhDxekcjjjj94hDkalclf8Uebhqalcdf8UebhkabavcefciGaiVcetfaD87ebdndnaoak:YNgwJb;:FSNJbbbZJbbb:;awJbbbb9GEMgx:lJbbb9p9DTmbax:Ohkxekcjjjj94hkkabavcdfciGaiVcetfak87ebdndnaoaq:YNgoJb;:FSNJbbbZJbbb:;aoJbbbb9GEMgx:lJbbb9p9DTmbax:Ohqxekcjjjj94hqkabavcufciGaiVcetfaq87ebdndnJbbjZararN:tawawN:taoaoN:tgrJbbbbarJbbbb9GE:rJb;:FSNJbbbZMgr:lJbbb9p9DTmbar:Ohqxekcjjjj94hqkabavciGaiVcetfaq87ebalcwfhlaiclfhiaecufgembkkk9mbdnadcd4ae2geTmbinababydbgdcwtcw91:Yadce91cjjj;8ifcjjj98G::NUdbabclfhbaecufgembkkk9teiucbcbydj1jjbgeabcifc98GfgbBdj1jjbdndnabZbcztgd9nmbcuhiabad9RcFFifcz4nbcuSmekaehikaik;LeeeudndnaeabVciGTmbabhixekdndnadcz9pmbabhixekabhiinaiaeydbBdbaiclfaeclfydbBdbaicwfaecwfydbBdbaicxfaecxfydbBdbaiczfhiaeczfheadc9Wfgdcs0mbkkadcl6mbinaiaeydbBdbaeclfheaiclfhiadc98fgdci0mbkkdnadTmbinaiaeRbb86bbaicefhiaecefheadcufgdmbkkabk;aeedudndnabciGTmbabhixekaecFeGc:b:c:ew2hldndnadcz9pmbabhixekabhiinaialBdbaicxfalBdbaicwfalBdbaiclfalBdbaiczfhiadc9Wfgdcs0mbkkadcl6mbinaialBdbaiclfhiadc98fgdci0mbkkdnadTmbinaiae86bbaicefhiadcufgdmbkkabkkkebcjwklz9Kbb";
@@ -9515,7 +9522,7 @@ var MeshoptDecoder = (function() {
   };
 })();
 
-// src/vendor/jsm/utils/SkeletonUtils.js
+// ../game/src/vendor/jsm/utils/SkeletonUtils.js
 import {
   AnimationClip as AnimationClip2,
   AnimationMixer,
@@ -9555,7 +9562,7 @@ function parallelTraverse(a, b, callback) {
   }
 }
 
-// src/qanimals.js
+// ../game/src/qanimals.js
 var FILES = ["deer", "raccoon", "boar", "chicken"];
 var HEIGHT = [1.55, 0.42, 0.85, 0.38];
 var TINT = [null, null, 5916214, null];
@@ -9646,7 +9653,7 @@ function animateQAnimal(v, dt, spd, mode, dead = false) {
   for (const m of v.mats) m.emissive.setRGB(h * 0.6, 0, 0);
 }
 
-// src/props.js
+// ../game/src/props.js
 import * as THREE3 from "three";
 var TIERS = {
   low: { id: "low", label: "Low", std: false, tex: 128, pbr: false, shadow: 0, post: false, ao: false, ph: null, hdr: null, scatter: 0, pr: 1.25, grass: 800, rain: 0, motes: 0, env: false, pointShadow: 0, bldLights: false, mist: 0, clouds: false, particles: 200, fov: 72, detail: 0 },
@@ -10482,19 +10489,19 @@ function buildFurn(M, n) {
   return g;
 }
 
-// src/kitswap.js
+// ../game/src/kitswap.js
 import * as THREE8 from "three";
 
-// src/openworldview.js
+// ../game/src/openworldview.js
 import * as THREE7 from "three";
 
-// src/qchars.js
+// ../game/src/qchars.js
 import * as THREE6 from "three";
 
-// src/chars.js
+// ../game/src/chars.js
 import * as THREE5 from "three";
 
-// src/zbody.js
+// ../game/src/zbody.js
 import * as THREE4 from "three";
 var C = {};
 var cv = (n, f) => {
@@ -10652,7 +10659,7 @@ function clawHand(mat, SH, seed) {
   return g;
 }
 
-// src/chars.js
+// ../game/src/chars.js
 var eIO = (t) => 0.5 - 0.5 * Math.cos(Math.PI * Math.min(1, Math.max(0, t)));
 var eIn = (t) => {
   t = Math.min(1, Math.max(0, t));
@@ -11123,7 +11130,7 @@ var VM_SWING = {
   hit: { pitch: 0.36, yaw: 0.52, roll: 0.3, wrist: -1.5, sx: -0.03, sy: -0.02, sz: -0.06, tilt: 0.035 }
 };
 
-// src/qchars.js
+// ../game/src/qchars.js
 var QC = { ready: false, failed: false, bodies: {}, hair: {}, clips: {}, started: false };
 var BASE = (() => {
   try {
@@ -11317,6 +11324,10 @@ function qAnimate(h, dt, spd, st = {}, lod = 1) {
   let clip, ts = 1;
   if (st.dead) {
     clip = "Death01";
+    if (h.cur !== clip && QC.clips[clip]) {
+      h.mixer.stopAllAction();
+      h.cur = null;
+    }
     qPlay(h, clip, 0.15, true);
   } else if (h.zombie) {
     if (st.atk > 0) {
@@ -11445,7 +11456,7 @@ function qGear(M, h, mkArmor) {
   return h.gear = { armor, helm, kit: !!am };
 }
 
-// src/openworldview.js
+// ../game/src/openworldview.js
 var KIT = { ready: false, failed: false, started: false, parts: /* @__PURE__ */ new Map(), size: /* @__PURE__ */ new Map(), grime: /* @__PURE__ */ new Map() };
 function loadKit() {
   if (KIT.started) return KIT.p;
@@ -11809,16 +11820,21 @@ function buildOpenWorld(M, W, T2, parent, scene) {
         box(0.3, 0.3, 0.32, 11575360, g, 1.4, T3.z1 + 0.1, 0, gg);
         sp.userData.gate = gg;
       }
-      box(0.35, 0.5, 0.2, 3817026, g + 3.4, 1.3, T3.z1 + 0.35);
-      box(0.2, 0.12, 0.05, 8441952, g + 3.4, 1.42, T3.z1 + 0.47);
+      box(0.4, 3.6, 0.4, 4869714, g - 3.2, 1.8, T3.z1);
+      box(0.4, 3.6, 0.4, 4869714, g + 3.2, 1.8, T3.z1);
+      box(6.8, 0.3, 0.4, 4869714, g, 3.5, T3.z1);
+      box(0.14, 1.25, 0.14, 3027510, g + 3.6, 0.62, T3.z1 + 0.45);
+      box(0.38, 0.5, 0.18, 3817026, g + 3.6, 1.42, T3.z1 + 0.45);
+      box(0.2, 0.12, 0.04, 8441952, g + 3.6, 1.52, T3.z1 + 0.55);
       buildLab();
       for (const dx of [-12, 12]) place("road_light_square", g + dx, T3.z1 + 2, 0, "h", 5);
     }
     buildHideout();
     for (const q of POLES) {
-      const m = place("road_electricity_pole", q.x, q.z, q.yaw + Math.PI / 2, "h", 8.5);
-      if (m) m.scale.x *= 0.38;
-      else box(0.25, 8, 0.25, 5917242, q.x, 4, q.z);
+      box(0.26, 8.5, 0.26, 5917242, q.x, 4.25, q.z);
+      box(0.12, 0.12, 2.2, 4865072, q.x, 7.9, q.z, q.yaw);
+      box(0.1, 0.18, 0.1, 14211272, q.x + Math.sin(q.yaw) * 0.9, 8.05, q.z + Math.cos(q.yaw) * 0.9);
+      box(0.1, 0.18, 0.1, 14211272, q.x - Math.sin(q.yaw) * 0.9, 8.05, q.z - Math.cos(q.yaw) * 0.9);
     }
     for (const q of RSIGNS) place("road_road_sign_street", q.x, q.z, q.yaw, "h", 2.6);
   }
@@ -12151,7 +12167,7 @@ function buildOpenWorld(M, W, T2, parent, scene) {
   };
 }
 
-// src/kitswap.js
+// ../game/src/kitswap.js
 var Q = [];
 var hooked = false;
 var SWAP = { n: 0, miss: [] };
@@ -12313,7 +12329,7 @@ function swapLoot(g, n, i, bb, SH, isBat) {
 }
 if (typeof window !== "undefined") window.__KIT = KIT;
 
-// src/townview2.js
+// ../game/src/townview2.js
 import * as THREE9 from "three";
 function holeScan(root, R2) {
   const px = (R2.x0 + R2.x1) / 2, pz = (R2.z0 + R2.z1) / 2;
@@ -12988,7 +13004,7 @@ function buildTown2(M, W, T2, g, SH) {
   return out;
 }
 
-// src/townview.js
+// ../game/src/townview.js
 function label(text) {
   const c = document.createElement("canvas");
   c.width = 256;
@@ -13551,10 +13567,10 @@ function buildTownView(M, W, T2, scene) {
   };
 }
 
-// src/view.js
+// ../game/src/view.js
 import * as THREE18 from "three";
 
-// src/texgen.js
+// ../game/src/texgen.js
 import * as THREE11 from "three";
 function makeNoise(seed) {
   const r = mulberry32(seed), G = new Float32Array(256 * 256);
@@ -13779,7 +13795,7 @@ function foliageCard(size, kind, seed) {
   return t;
 }
 
-// src/sky.js
+// ../game/src/sky.js
 import * as THREE12 from "three";
 var VERT = (
   /* glsl */
@@ -13920,10 +13936,10 @@ function makeEnvironment(renderer) {
   return rt.texture;
 }
 
-// src/fx.js
+// ../game/src/fx.js
 import * as THREE13 from "three";
 
-// src/vendor/jsm/postprocessing/EffectComposer.js
+// ../game/src/vendor/jsm/postprocessing/EffectComposer.js
 import {
   Clock,
   HalfFloatType,
@@ -13932,7 +13948,7 @@ import {
   WebGLRenderTarget
 } from "three";
 
-// src/vendor/jsm/shaders/CopyShader.js
+// ../game/src/vendor/jsm/shaders/CopyShader.js
 var CopyShader = {
   name: "CopyShader",
   uniforms: {
@@ -13972,13 +13988,13 @@ var CopyShader = {
   )
 };
 
-// src/vendor/jsm/postprocessing/ShaderPass.js
+// ../game/src/vendor/jsm/postprocessing/ShaderPass.js
 import {
   ShaderMaterial as ShaderMaterial3,
   UniformsUtils
 } from "three";
 
-// src/vendor/jsm/postprocessing/Pass.js
+// ../game/src/vendor/jsm/postprocessing/Pass.js
 import {
   BufferGeometry as BufferGeometry6,
   Float32BufferAttribute as Float32BufferAttribute5,
@@ -14028,7 +14044,7 @@ var FullScreenQuad = class {
   }
 };
 
-// src/vendor/jsm/postprocessing/ShaderPass.js
+// ../game/src/vendor/jsm/postprocessing/ShaderPass.js
 var ShaderPass = class extends Pass {
   constructor(shader, textureID) {
     super();
@@ -14068,7 +14084,7 @@ var ShaderPass = class extends Pass {
   }
 };
 
-// src/vendor/jsm/postprocessing/MaskPass.js
+// ../game/src/vendor/jsm/postprocessing/MaskPass.js
 var MaskPass = class extends Pass {
   constructor(scene, camera) {
     super();
@@ -14125,7 +14141,7 @@ var ClearMaskPass = class extends Pass {
   }
 };
 
-// src/vendor/jsm/postprocessing/EffectComposer.js
+// ../game/src/vendor/jsm/postprocessing/EffectComposer.js
 var EffectComposer = class {
   constructor(renderer, renderTarget) {
     this.renderer = renderer;
@@ -14247,7 +14263,7 @@ var EffectComposer = class {
   }
 };
 
-// src/vendor/jsm/postprocessing/RenderPass.js
+// ../game/src/vendor/jsm/postprocessing/RenderPass.js
 import {
   Color as Color10
 } from "three";
@@ -14301,7 +14317,7 @@ var RenderPass = class extends Pass {
   }
 };
 
-// src/vendor/jsm/postprocessing/UnrealBloomPass.js
+// ../game/src/vendor/jsm/postprocessing/UnrealBloomPass.js
 import {
   AdditiveBlending as AdditiveBlending2,
   Color as Color12,
@@ -14314,7 +14330,7 @@ import {
   WebGLRenderTarget as WebGLRenderTarget2
 } from "three";
 
-// src/vendor/jsm/shaders/LuminosityHighPassShader.js
+// ../game/src/vendor/jsm/shaders/LuminosityHighPassShader.js
 import {
   Color as Color11
 } from "three";
@@ -14372,7 +14388,7 @@ var LuminosityHighPassShader = {
   )
 };
 
-// src/vendor/jsm/postprocessing/UnrealBloomPass.js
+// ../game/src/vendor/jsm/postprocessing/UnrealBloomPass.js
 var UnrealBloomPass = class _UnrealBloomPass extends Pass {
   constructor(resolution, strength, radius, threshold) {
     super();
@@ -14628,7 +14644,7 @@ var UnrealBloomPass = class _UnrealBloomPass extends Pass {
 UnrealBloomPass.BlurDirectionX = new Vector25(1, 0);
 UnrealBloomPass.BlurDirectionY = new Vector25(0, 1);
 
-// src/vendor/jsm/postprocessing/OutputPass.js
+// ../game/src/vendor/jsm/postprocessing/OutputPass.js
 import {
   ColorManagement as ColorManagement2,
   RawShaderMaterial,
@@ -14641,7 +14657,7 @@ import {
   SRGBTransfer
 } from "three";
 
-// src/vendor/jsm/shaders/OutputShader.js
+// ../game/src/vendor/jsm/shaders/OutputShader.js
 var OutputShader = {
   name: "OutputShader",
   uniforms: {
@@ -14721,7 +14737,7 @@ var OutputShader = {
   )
 };
 
-// src/vendor/jsm/postprocessing/OutputPass.js
+// ../game/src/vendor/jsm/postprocessing/OutputPass.js
 var OutputPass = class extends Pass {
   constructor() {
     super();
@@ -14767,7 +14783,7 @@ var OutputPass = class extends Pass {
   }
 };
 
-// src/vendor/jsm/postprocessing/GTAOPass.js
+// ../game/src/vendor/jsm/postprocessing/GTAOPass.js
 import {
   AddEquation,
   Color as Color13,
@@ -14791,7 +14807,7 @@ import {
   ZeroFactor
 } from "three";
 
-// src/vendor/jsm/shaders/GTAOShader.js
+// ../game/src/vendor/jsm/shaders/GTAOShader.js
 import {
   DataTexture,
   Matrix4 as Matrix46,
@@ -15151,7 +15167,7 @@ function generateMagicSquare(size) {
   return magicSquare;
 }
 
-// src/vendor/jsm/shaders/PoissonDenoiseShader.js
+// ../game/src/vendor/jsm/shaders/PoissonDenoiseShader.js
 import {
   Matrix4 as Matrix47,
   Vector2 as Vector27,
@@ -15355,7 +15371,7 @@ function generateDenoiseSamples(numSamples, numRings, radiusExponent) {
   return samples;
 }
 
-// src/vendor/jsm/math/SimplexNoise.js
+// ../game/src/vendor/jsm/math/SimplexNoise.js
 var SimplexNoise = class {
   constructor(r = Math) {
     this.grad3 = [
@@ -15760,7 +15776,7 @@ var SimplexNoise = class {
   }
 };
 
-// src/vendor/jsm/postprocessing/GTAOPass.js
+// ../game/src/vendor/jsm/postprocessing/GTAOPass.js
 var GTAOPass = class _GTAOPass extends Pass {
   constructor(scene, camera, width, height, parameters, aoParameters, pdParameters) {
     super();
@@ -16120,7 +16136,7 @@ GTAOPass.OUTPUT = {
   "Denoise": 5
 };
 
-// src/fx.js
+// ../game/src/fx.js
 var Particles = class {
   constructor(max, additive) {
     this.max = max;
@@ -16333,7 +16349,7 @@ function makePost(renderer, scene, camera, vmScene, vmCam, w, h, pr, opt = {}) {
   return { composer, bloom, grade, ao };
 }
 
-// src/structs.js
+// ../game/src/structs.js
 import * as THREE14 from "three";
 var E = new THREE14.Euler();
 var Q2 = new THREE14.Quaternion();
@@ -16569,7 +16585,7 @@ function buildGhost(MT_, type, tier, r) {
   return o.g;
 }
 
-// src/animals.js
+// ../game/src/animals.js
 import * as THREE15 from "three";
 var GEO = /* @__PURE__ */ new Map();
 var g1 = (key, make) => {
@@ -16699,10 +16715,10 @@ function animateAnimal(v, dt, spd, mode) {
   for (const m of v.mats) if (m.emissive) m.emissive.setRGB(h * 0.6, 0, 0);
 }
 
-// src/assets.js
+// ../game/src/assets.js
 import * as THREE16 from "three";
 
-// src/vendor/jsm/loaders/RGBELoader.js
+// ../game/src/vendor/jsm/loaders/RGBELoader.js
 import {
   DataTextureLoader,
   DataUtils,
@@ -16951,7 +16967,7 @@ var RGBELoader = class extends DataTextureLoader {
   }
 };
 
-// src/assets.js
+// ../game/src/assets.js
 var PH_TEX = { grass: "sparse_grass", forest: "forest_leaves_02", dirt: "brown_mud_02", bark: "bark_brown_02", planks: "weathered_planks", brick: "red_brick_03", concrete: "concrete_wall_008", rock: "aerial_rocks_02", metal: "rusty_metal_02" };
 var PH_HDR = "farmland_overcast";
 var CDN = "https://dl.polyhaven.org/file/ph-assets/";
@@ -17088,7 +17104,7 @@ async function upgradeMaterials(mats, tex, res, onDone) {
   if (onDone) onDone(Object.keys(sets).filter((k) => sets[k]).length);
 }
 
-// src/hfog.js
+// ../game/src/hfog.js
 import * as THREE17 from "three";
 var C3 = THREE17.ShaderChunk;
 var ORIG = { pv: C3.fog_pars_vertex, v: C3.fog_vertex, pf: C3.fog_pars_fragment, f: C3.fog_fragment };
@@ -17115,7 +17131,7 @@ function setHeightFog(on) {
 #endif`;
 }
 
-// src/view.js
+// ../game/src/view.js
 function gunKit(g) {
   if (!g || g.userData.kit || !KIT.ready) return;
   const m = kitModel("gear_pistol", "l", 0.2);
@@ -18016,7 +18032,7 @@ var View = class {
       cam.position.y -= kk * 0.035;
       cam.position.x += (Math.random() - 0.5) * 0.02 * kk;
       cam.rotation.set(down ? -0.2 : ctl.pitch - dip - kk * 0.045 + (Math.random() - 0.5) * 0.03 * sh, me.yaw + this.kickDir * kk * 0.012, (down ? 0.5 : 0) + Math.sin(this.bob * 0.5) * 4e-3 * speed + (Math.random() - 0.5) * 0.04 * sh + this.kickDir * kk * 0.02);
-      const fov = 72 + (me.sp && speed > 0.3 ? 5 : 0);
+      const fov = (72 + (me.sp && speed > 0.3 ? 5 : 0)) * (window.__llZoom ? me.hd === 7 ? 0.72 : 0.9 : 1);
       this.fovKick += (fov - this.fovKick) * Math.min(1, dt * 6);
       if (Math.abs(cam.fov - this.fovKick) > 0.05) {
         cam.fov = this.fovKick;
@@ -18292,12 +18308,12 @@ var View = class {
       if (!v) {
         const sd = z.id * 7 + 3, hh = hash2(sd), skin = new THREE18.Color().setHSL(0.17 + hh * 0.07, 0.1 + hh * 0.08, 0.3 + hash2(sd + 1) * 0.08).getHex();
         const shirt = [4868668, 3950168, 5913652, 4476988, 5262424][Math.floor(hash2(sd + 2) * 5)], pants = [2895667, 3814184, 2371642][Math.floor(hash2(sd + 3) * 3)];
-        const zo = { zombie: true, skin: z.gb ? 4872762 : skin, shirt: z.gb ? 2759188 : shirt, pants: z.gb ? 1710614 : pants, seed: Math.floor(hh * 100), scale: z.gb ? 2.5 : 0.95 + hash2(sd + 4) * 0.14 };
+        const zo = { zombie: true, skin: z.gb ? 4872762 : skin, shirt: z.gb ? 2759188 : shirt, pants: z.gb ? 1710614 : pants, seed: Math.floor(hh * 100), scale: z.gb ? 1.65 : 0.95 + hash2(sd + 4) * 0.14 };
         let h;
         if (QC.ready) {
           h = makeQPerson(M, { ...zo, female: !z.gb && hash2(sd + 5) < 0.4, skin: new THREE18.Color(zo.skin).multiplyScalar(0.8).getHex(), hairStyle: z.gb ? "buzzed" : ["simpleparted", "buzzed", "long"][Math.floor(hash2(sd + 6) * 3)], hair: 1972756 });
           h.group.scale.setScalar(zo.scale);
-          if (z.gb) h.group.scale.set(3, 2.5, 3);
+          if (z.gb) h.group.scale.set(1.25, 1, 1.25);
         } else h = makeHumanoid(M, zo);
         h.ud.hitT = h.ud.hitT || 0;
         h.ud.ph = h.ud.ph || 0;
@@ -18790,7 +18806,7 @@ var View = class {
   }
 };
 
-// src/ui.js
+// ../game/src/ui.js
 var $2 = (id) => document.getElementById(id);
 var KB_LOCK = false;
 var kbLocked = () => KB_LOCK && !!document.fullscreenElement;
@@ -18890,7 +18906,10 @@ var Input = class {
       if (e.button === 0) {
         this.attackHeld = true;
         this.pressed.add("lmb");
-      } else if (e.button === 2) this.pressed.add("cancel");
+      } else if (e.button === 2) {
+        this.pressed.add("cancel");
+        window.__llZoom = 1;
+      }
     });
     canvas.addEventListener("wheel", (e) => {
       if (!this.enabled || !this.locked && !isTouch2) return;
@@ -18902,6 +18921,7 @@ var Input = class {
     });
     addEventListener("mouseup", (e) => {
       if (e.button === 0) this.attackHeld = false;
+      if (e.button === 2) window.__llZoom = 0;
     });
     addEventListener("mousemove", (e) => {
       if (this.locked && this.enabled) {
@@ -19208,7 +19228,7 @@ var HUD = class {
   }
 };
 
-// src/audio.js
+// ../game/src/audio.js
 var clamp2 = (v, a, b) => v < a ? a : v > b ? b : v;
 var rnd = (a, b) => a + Math.random() * (b - a);
 var hash4 = (n) => {
@@ -20086,7 +20106,7 @@ var GameAudio = class {
   }
 };
 
-// src/music.js
+// ../game/src/music.js
 var STATES = ["menu", "day", "night", "combat", "shelter", "death", "win"];
 var KEYS = [...STATES, "tension"];
 var CHAIN = { menu: ["menu", "day"], day: ["day"], night: ["night", "day"], combat: ["combat", "night", "day"], shelter: ["shelter", "night", "day"], death: ["death"], win: ["win"] };
@@ -20402,7 +20422,7 @@ var Music = class {
   }
 };
 
-// src/packgame.js
+// ../game/src/packgame.js
 var PackGame = class {
   constructor(game) {
     this.g = game;
@@ -20721,7 +20741,7 @@ var PackGame = class {
   }
 };
 
-// src/save.js
+// ../game/src/save.js
 var KEY = "lastlight_save_v1";
 var hasSave = () => {
   try {
@@ -20803,7 +20823,7 @@ function applySave(sim, me, d, snapPlace2) {
   S2.night = S2.wasNight = isNightT(todOf(S2.time));
 }
 
-// src/main.js
+// ../game/src/main.js
 var $3 = (id) => document.getElementById(id);
 var params = new URLSearchParams(location.search);
 var isTouch = params.get("touch") === "1" || matchMedia("(pointer:coarse)").matches && params.get("touch") !== "0";
