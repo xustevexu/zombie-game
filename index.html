@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
 <meta name="theme-color" content="#0b0f14">
-<title>Last Light — Stage 1: Shelter (prototype)</title>
+<title>Last Light</title>
 <style>
   :root { --ui:#e8e4d8; --dim:#9aa0a6; --acc:#f2b84b; --bad:#e5533d; --good:#6cc36c; }
   * { box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
@@ -254,9 +254,9 @@
 </div>
 <div id="menu" class="overlay">
   <div class="panel wide">
-    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.10.0</div>
+    <h1>LAST LIGHT</h1><div id="ver" style="margin-top:-6px;font-size:12px;letter-spacing:2px;color:#e8b830;opacity:.85">v7.11.0</div>
     <h2>Wake up. Find shelter. Survive.</h2>
-    <p>You wake up in a tent. The world, seems to have changed overnight. The dead walk at night. Scavenge wood, board up a ruined building and hold out until dawn&hellip; the first step toward building something bigger.</p>
+    <p>You wake in a tent after a camping trip. The world, seems to have changed overnight. Find shelter, get to the fortified town, and figure out what happened &mdash; the first step toward something much bigger.</p>
     <div class="row"><input id="name" type="text" maxlength="14" placeholder="Your name" autocomplete="off"></div>
     <div class="row">
       <button class="btn hidden" id="bCont">Continue saved game</button>
@@ -287,7 +287,7 @@
 
 <div id="pause" class="overlay hidden">
   <div class="panel wide">
-    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.10.0</small></h1>
+    <h1 style="font-size:24px">PAUSED <small style="font-size:12px;color:#e8b830">v7.11.0</small></h1>
     <h2 id="pauseNote">The game is paused.</h2>
     <div class="tools">
       <button class="btn" id="bResume">Resume</button>
@@ -332,7 +332,8 @@ var CFG = {
   ZOMBIE_R: 0.45,
   WALK: 3.6,
   RUN: 6.2,
-  HUNGER_RATE: 0.24,
+  HUNGER_RATE: 0.12,
+  /* v7.11: 2x slower */
   // hunger points lost per second (100 -> 0 in ~7 min)
   RESPAWN_TIME: 15,
   MAX_PLAYERS: 2,
@@ -372,7 +373,7 @@ var CFG = {
   WALL_H: 3,
   OPEN_W: 1.8
 };
-var ITEMS = ["wood", "scrap", "food", "cloth", "meat", "cooked", "seeds", "bud", "bag", "pot", "soil", "dirt", "gsoil", "arrow", "bow", "shovel", "budh", "gun", "ammo", "mag", "armor", "helm", "armorOn", "helmOn", "vial", "armorB", "helmB", "bike"];
+var ITEMS = ["wood", "scrap", "food", "cloth", "meat", "cooked", "seeds", "bud", "bag", "pot", "soil", "dirt", "gsoil", "arrow", "bow", "shovel", "budh", "gun", "ammo", "mag", "armor", "helm", "armorOn", "helmOn", "vial", "armorB", "helmB", "bike", "msup", "mext"];
 var PEER_PREFIX = "lastlight-";
 var ICE_SERVERS = [
   { urls: "stun:stun.l.google.com:19302" },
@@ -794,6 +795,17 @@ function chunk(seed, cx, cz) {
   return c;
 }
 var BX = (x, z, hx, hz, h) => [x - hx, x + hx, z - hz, z + hz, h];
+var ELEV = (() => {
+  const o = [], L = LAB, R2 = 3.4, T2 = 3.7, st = 0.37;
+  for (let i = 0; i < 10; i++) o.push([L.x1 + 0.3, L.x1 + 1.6, -1022.5 - i, -1021.5 - i, (i + 1) * st, 0, 7041142]);
+  o.push([L.x0 - 0.3, L.x1 + 0.3, L.z0 - 0.3, L.z1 + 0.3, T2, R2, 0]);
+  o.push([L.x0 - 0.3, L.x0 - 0.1, L.z0 - 0.3, L.z1 + 0.3, T2 + 0.9, T2, 5593438], [L.x0 - 0.3, L.x1 + 0.3, L.z0 - 0.3, L.z0 - 0.1, T2 + 0.9, T2, 5593438], [L.x0 - 0.3, L.x1 + 0.3, L.z1 + 0.1, L.z1 + 0.3, T2 + 0.9, T2, 5593438], [L.x1 + 0.1, L.x1 + 0.3, L.z0 - 0.3, -1032, T2 + 0.9, T2, 5593438]);
+  const t = HQ_TOWER, D = 4.6;
+  o.push([t.x - 1.6, t.x + 1.6, t.z - 1.6, t.z + 1.6, D, D - 0.25, 5916210], [t.x - 1.6, t.x + 1.6, t.z - 1.6, t.z - 1.45, D + 1, D, 5916210], [t.x - 1.6, t.x + 1.6, t.z + 1.45, t.z + 1.6, D + 1, D, 5916210], [t.x + 1.45, t.x + 1.6, t.z - 1.6, t.z + 1.6, D + 1, D, 5916210]);
+  for (const [dx, dz] of [[-1.4, -1.4], [1.4, -1.4], [-1.4, 1.4], [1.4, 1.4]]) o.push([t.x + dx - 0.12, t.x + dx + 0.12, t.z + dz - 0.12, t.z + dz + 0.12, D - 0.25, 0, 0]);
+  for (let i = 0; i < 12; i++) o.push([t.x - 1.6 - (12 - i) * 0.45, t.x - 1.6 - (11 - i) * 0.45, t.z - 0.6, t.z + 0.6, (i + 1) * (D / 12), 0, 5916210]);
+  return o;
+})();
 function setPieces() {
   const S2 = SPOTS, b = [];
   b.push(BX(S2.crash.x, S2.crash.z, 1.1, 2.3, 1.5));
@@ -825,7 +837,7 @@ function setPieces() {
     const H = HQ, w = 0.25, h = 2.8;
     b.push([H.x0, H.x1, H.z0 - w, H.z0 + w, h], [H.x0, H.x1, H.z1 - w, H.z1 + w, h], [H.x1 - w, H.x1 + w, H.z0, H.gz0, h], [H.x1 - w, H.x1 + w, H.gz1, H.z1, h], [H.x0 - w, H.x0 + w, H.z0, H.bz0, h], [H.x0 - w, H.x0 + w, H.bz1, H.z1, h]);
     for (const [x, z] of HQ_TENTS) b.push(BX(x, z, 1.4, 1.4, 1.7));
-    b.push(BX(HQ_TOWER.x, HQ_TOWER.z, 1.6, 1.6, 5));
+    b.push(...ELEV);
     b.push(BX(HQ_FUEL.x, HQ_FUEL.z, 1.2, 0.6, 1.1));
     b.push(BX(HQ.x1 + 5, HQ.z1 - 4, 1.1, 2.3, 1.8));
   }
@@ -874,7 +886,7 @@ function owObstacles(W, x, z, reach, fn) {
   for (let i = 0; i < SP.length; i++) {
     const q = SP[i];
     if (i === GATE_I && GATE_OPEN) continue;
-    if (x > q[0] - 1.5 - reach && x < q[1] + 1.5 + reach && z > q[2] - 1.5 - reach && z < q[3] + 1.5 + reach) fn(1, q[0], q[1], q[2], q[3], q[4]);
+    if (x > q[0] - 1.5 - reach && x < q[1] + 1.5 + reach && z > q[2] - 1.5 - reach && z < q[3] + 1.5 + reach) fn(1, q[0], q[1], q[2], q[3], q[4], q[5] || 0);
   }
   if (inBounds(x, z) && Math.hypot(x, z) < 90) return;
   const cx = Math.floor(x / CH), cz = Math.floor(z / CH), lx = x - cx * CH, lz = z - cz * CH, m = 7 + reach;
@@ -1142,7 +1154,7 @@ function gangDialogue(S2, me) {
     else if (bag > 0) o.push([`Sell them a baggie ($${gangPrice(tw)})`, "gsell"]);
     else if (ow.gs) o.push([`"Sorry, I'm out."`, "gout"]);
     o.push(['"Just passing through."', "gpass"]);
-    return { name: "Raider boss", text: `*The bat stays down.* "${ow.gs ? "Our supplier! Got any more of that green?" : "Look who it is. You did right by us. What you got?"}" (Road gang liked ${Math.round(gr)}/100)`, opts: o };
+    return { name: "Raider boss", text: `*The bat stays down.* "${ow.gs ? "Our supplier! Got any more of that green?" : "Look who it is. You did right by us. What you got?"}" (Road gang liked ${Math.round(gr)})`, opts: o };
   }
   if (ow.gq === 1 && ((me.inv.meat | 0) >= 3 || (me.inv.cooked | 0) >= 2)) o.push([(me.inv.meat | 0) >= 3 ? "Hand over the 3 raw meat they asked for" : "Hand over 2 cooked meat (their job)", "gtask"]);
   if (tw.cash >= 20) o.push(["Pay the toll ($20)", "gpay"]);
@@ -1151,7 +1163,7 @@ function gangDialogue(S2, me) {
   o.push([ow.gq === 1 ? '"Still working on your meat. Let me pass."' : `"I've got nothing worth your time. Let me pass."`, "gtalk"], ["Fight", "gfight"], ["Run for it", "gflee"]);
   return { name: "Raider boss", text: '*Three of them. A bat taps the road.* "Toll road, friend. Everybody pays. Cash, food, metal \u2014 or we take it off your body."', opts: o };
 }
-var gangPrice = (tw) => Math.round(BAG_P * 1.2 * (repOf(tw).g >= 70 ? 1.15 : 1));
+var gangPrice = (tw) => Math.round(BAG_P * 1.2 * (repOf(tw).g >= 700 ? 1.15 : 1));
 function gangTalk(sim, p, a) {
   const S2 = sim.S, ow = owState(S2.tw), g = ow.g, tw = S2.tw, day2 = Math.floor((S2.time || 0) / 450), L = gangLeader(ow), friendly = ow.gq === 2 && g.st !== 2 && L && Math.hypot(L[0] - p.x, L[1] - p.z) < 6 && ["gsample", "gsell", "gout", "gpass"].includes(a);
   if (!friendly && (g.st !== 1 || g.tgt !== p.id)) return;
@@ -1209,7 +1221,10 @@ function gangTalk(sim, p, a) {
     sim.toast(p.id, '"Go on then."');
   } else if (a === "gfight") {
     g.st = 2;
-    if (tw.rep) tw.rep.g = 0;
+    if (tw.rep) {
+      repOf(tw);
+      tw.rep.g = -300;
+    }
     ow.gq = 0;
     sim.toast(p.id, 'You raise your weapon. "Your funeral."');
   } else if (a === "gflee") {
@@ -1943,41 +1958,53 @@ function newTown() {
   };
 }
 var REP_NAME = { h: "Harlow", g: "Road gang" };
+var REP_MIN = -1e3;
+var REP_MAX = 1e4;
+var REP_K = 10;
 var repOf = (tw) => {
-  if (!tw.rep) tw.rep = { h: 10, g: 0, t: { h: 0, g: 0 } };
-  if (!tw.rep.t) tw.rep.t = { h: 0, g: 0 };
-  return tw.rep;
+  if (!tw.rep) tw.rep = { h: 0, g: 0, t: { h: 0, g: 0 }, v: 2 };
+  const r = tw.rep;
+  if (!r.t) r.t = { h: 0, g: 0 };
+  if (!r.v) {
+    r.h = (+r.h || 0) * REP_K;
+    r.g = (+r.g || 0) * REP_K;
+    r.t.h = (r.t.h | 0) * REP_K;
+    r.t.g = (r.t.g | 0) * REP_K;
+    r.v = 2;
+  }
+  return r;
 };
-var REP_TIER = [[30, "They are starting to notice you."], [70, null], [80, null], [95, null]];
+var REP_TIER = [[300, "They are starting to notice you."], [700, null], [800, null], [950, null]];
 var REP_MSG = {
-  h: { 70: "Harlow likes you (70+): townsfolk pay ~10% more per baggie.", 80: "Mayor Ruth has a private job for a trusted friend of Harlow (exclusive quest \u2014 see the journal).", 95: `EPIC: Harlow wants you as its champion. "Harlow's Champion" questline unlocked (journal) \u2014 more in a coming update.` },
-  g: { 70: "The road gang likes you (70+): no toll, and they pay ~15% more per baggie.", 80: 'The raider boss has a "special delivery" for you (exclusive quest \u2014 see the journal).', 95: 'EPIC: the crew wants you riding with them. "Ride with the Crew" questline unlocked (journal) \u2014 more in a coming update.' }
+  h: { 700: "Harlow likes you (700+): townsfolk pay ~10% more per baggie.", 800: "Mayor Ruth has a private job for a trusted friend of Harlow (exclusive quest \u2014 see the journal).", 950: `EPIC: Harlow wants you as its champion. "Harlow's Champion" questline unlocked (journal) \u2014 more in a coming update.` },
+  g: { 700: "The road gang likes you (700+): no toll, and they pay ~15% more per baggie.", 800: 'The raider boss has a "special delivery" for you (exclusive quest \u2014 see the journal).', 950: 'EPIC: the crew wants you riding with them. "Ride with the Crew" questline unlocked (journal) \u2014 more in a coming update.' }
 };
 function repAdd(sim, p, k, d) {
   const tw = sim.S.tw;
   if (!tw) return;
   const r = repOf(tw), o = k === "h" ? "g" : "h", old = r[k];
-  r[k] = Math.max(0, Math.min(100, Math.round((old + d) * 10) / 10));
-  if (d > 0 && r[k] > 30 && r[o] > 0) {
-    const loss = Math.round(d * 0.4 * 10) / 10;
-    r[o] = Math.max(0, r[o] - loss);
+  d = d * REP_K;
+  r[k] = Math.max(REP_MIN, Math.min(REP_MAX, Math.round(old + d)));
+  if (d > 0 && r[k] > 300 && r[o] > REP_MIN) {
+    const loss = Math.round(d * 0.4);
+    r[o] = Math.max(REP_MIN, r[o] - loss);
     if (old <= 30 || Math.random() < 0.25) sim.toast(p.id, `${REP_NAME[o]} heard you've been cosy with ${k === "h" ? "Harlow" : "the road gang"} (\u2212${loss} liked).`);
   }
   for (const [lv, m0] of REP_TIER) if (r[k] >= lv && (r.t[k] | 0) < lv) {
-    if (lv === 95 && r[o] >= 30) continue;
+    if (lv === 950 && r[o] >= 300) continue;
     r.t[k] = lv;
-    sim.toast(p.id, `${REP_NAME[k]} standing ${Math.round(r[k])}/100 \u2014 ${m0 || REP_MSG[k][lv]}`);
+    sim.toast(p.id, `${REP_NAME[k]} standing ${Math.round(r[k])} \u2014 ${m0 || REP_MSG[k][lv]}`);
   }
-  if (d) sim.toast(p.id, `${REP_NAME[k]} liked ${d > 0 ? "+" : ""}${Math.round(d * 10) / 10} \u2192 ${Math.round(r[k])}/100`);
+  if (d) sim.toast(p.id, `${REP_NAME[k]} liked ${d > 0 ? "+" : ""}${Math.round(d)} \u2192 ${Math.round(r[k])}`);
 }
 function repText(tw) {
-  const r = repOf(tw), side = r.h >= 30 && r.g < 30 ? "Harlow" : r.g >= 30 && r.h < 30 ? "the road gang" : null;
+  const r = repOf(tw), side = r.h >= 300 && r.g < 300 ? "Harlow" : r.g >= 300 && r.h < 300 ? "the road gang" : null;
   const q = [];
-  if ((r.t.h | 0) >= 80) q.push("\u2605 Ruth's private job (Harlow 80) \u2014 placeholder, coming soon");
-  if ((r.t.h | 0) >= 95) q.push("\u2605\u2605 EPIC: Harlow's Champion (Harlow 95) \u2014 coming soon");
-  if ((r.t.g | 0) >= 80) q.push("\u2605 Special delivery (gang 80) \u2014 placeholder, coming soon");
-  if ((r.t.g | 0) >= 95) q.push("\u2605\u2605 EPIC: Ride with the Crew (gang 95) \u2014 coming soon");
-  return `Harlow ${Math.round(r.h)}/100 \xB7 Road gang ${Math.round(r.g)}/100 \u2014 ${side ? `you lean towards ${side}` : r.h < 30 && r.g < 30 ? "quietly dealing to both (under 30 each)" : "both sides are watching you"}. Samples +5, sales +5\u201310, "sorry, I'm out" \u22121\u20132; past 30 the other side notices. 70 / 80 / 95 unlock bonuses, exclusive jobs and epic quests (epic only if you pick a side).${q.length ? "<br>" + q.join("<br>") : ""}`;
+  if ((r.t.h | 0) >= 800) q.push("\u2605 Ruth's private job (Harlow 800) \u2014 placeholder, coming soon");
+  if ((r.t.h | 0) >= 950) q.push("\u2605\u2605 EPIC: Harlow's Champion (Harlow 950) \u2014 coming soon");
+  if ((r.t.g | 0) >= 800) q.push("\u2605 Special delivery (gang 800) \u2014 placeholder, coming soon");
+  if ((r.t.g | 0) >= 950) q.push("\u2605\u2605 EPIC: Ride with the Crew (gang 950) \u2014 coming soon");
+  return `Harlow ${Math.round(r.h)} \xB7 Road gang ${Math.round(r.g)} (scale \u22121000 to 10,000) \u2014 ${side ? `you lean towards ${side}` : r.h < 300 && r.g < 300 ? "quietly dealing to both (under 300 each)" : "both sides are watching you"}. Samples +50, sales +50\u2013100, "sorry, I'm out" \u221210\u201320; past 300 the other side notices. 700 / 800 / 950 unlock bonuses, exclusive jobs and epic quests (epic only if you pick a side).${q.length ? "<br>" + q.join("<br>") : ""}`;
 }
 var price = (S2, base) => Math.max(1, Math.round(base * (0.8 + Math.max(0, S2.tw.fac) / 100)));
 var BAG_P = 25;
@@ -2574,8 +2601,8 @@ function collide(W, S2, x, z, r, y = 0) {
     return p;
   }
   for (let it = 0; it < 2; it++) {
-    obstacles(W, S2, p.x, p.z, (k, a, b, c, d, h) => {
-      if (h <= top) return;
+    obstacles(W, S2, p.x, p.z, (k, a, b, c, d, h, y0) => {
+      if (h <= top || y0 && y + 1.75 < y0) return;
       if (k === 0) pushCircle(p, a, b, c, r);
       else {
         BOX.x0 = a;
@@ -2598,6 +2625,7 @@ function ceilingAt(W, S2, x, z, y = 0) {
     const cb = CFG.WALL_H - 0.13;
     if (cb > y + 0.5 && cb < c) c = cb;
   }
+  for (const q of ELEV) if (q[5] > y + 0.5 && q[5] < c && x > q[0] - m && x < q[1] + m && z > q[2] - m && z < q[3] + m) c = q[5];
   if (S2 && S2.structs) {
     for (const s of S2.structs.values()) if (s.t === "roof" && Math.abs(x - s.x) < 1.05 + m && Math.abs(z - s.z) < 1.05 + m) {
       const cb = 2.56;
@@ -2644,8 +2672,8 @@ function meleeBlocked(W, S2, ax, az, bx, bz, y = 0) {
   const B = { x0: 0, x1: 0, z0: 0, z1: 0 };
   let hit = false;
   const mx = (ax + bx) / 2, mz = (az + bz) / 2, reach = Math.hypot(bx - ax, bz - az) / 2;
-  obstacles(W, S2, mx, mz, (k, a, b, c, d, h) => {
-    if (hit || k === 0 || h < y + 1.8) return;
+  obstacles(W, S2, mx, mz, (k, a, b, c, d, h, y0) => {
+    if (hit || k === 0 || h < y + 1.8 || y0 && y0 > y + 1.8) return;
     B.x0 = a;
     B.x1 = b;
     B.z0 = c;
@@ -2658,8 +2686,8 @@ function pathClear(W, S2, ax, az, bx, bz, r = 0.4) {
   const B = { x0: 0, x1: 0, z0: 0, z1: 0 };
   let hit = false;
   const mx = (ax + bx) / 2, mz = (az + bz) / 2, reach = Math.hypot(bx - ax, bz - az) / 2 + r;
-  obstacles(W, S2, mx, mz, (k, a, b, c, d, h) => {
-    if (hit || h < 0.9) return;
+  obstacles(W, S2, mx, mz, (k, a, b, c, d, h, y0) => {
+    if (hit || h < 0.9 || y0 > 1.8) return;
     if (k === 0) {
       B.x0 = a - c - r;
       B.x1 = a + c + r;
@@ -3814,6 +3842,8 @@ var RECIPES = [
   { id: "bow", n: "Hunting bow", c: { wood: 5, cloth: 2 }, out: { bow: 1 }, d: "Quiet, ranged. Hotbar slot 7.", once: "bow" },
   { id: "arrows", n: "5 arrows", c: { wood: 2, scrap: 1 }, out: { arrow: 5 }, d: "Ammo for the bow." },
   { id: "dig", n: "Dig dirt", c: {}, out: { dirt: 1 }, need: "shovel", d: "Plain soil for a pot. Needs a shovel; anywhere on grass or dirt (not roads or floors)." },
+  { id: "msup", n: "Gun mod: suppressor", c: { scrap: 6, cloth: 2 }, out: { msup: 1 }, need: "gun", once: "msup", d: "Mod slot 1 of 2. Gunshots carry ~25 m instead of ~60 m." },
+  { id: "mext", n: "Gun mod: extended magazine", c: { scrap: 8, wood: 1 }, out: { mext: 1 }, need: "gun", once: "mext", d: "Mod slot 2 of 2. Magazine holds 12 rounds instead of 8." },
   { id: "compost", n: "Compost \u2192 good soil", c: { dirt: 1, food: 2 }, alt: { dirt: 1, meat: 1 }, out: { gsoil: 1 }, d: "Rotten food or animal scraps + dirt. Better yields." }
 ];
 function ensureTown(S2) {
@@ -3839,17 +3869,18 @@ function ebagBack(tw, n) {
 var near2 = (p, q, r) => q && Math.hypot(p.x - q.x, p.z - q.z) < r;
 var nearPack = (sim, p) => near2(p, sim.W.tw && sim.W.tw.table, 2.6) || [...sim.S.structs ? sim.S.structs.values() : []].some((s) => s.t === "pbench" && near2(p, s, 3.4));
 var MAG = 8;
+var magOf = (inv) => inv.mext | 0 ? 12 : MAG;
 function gearAct(sim, p, id) {
   const inv = p.inv, toast = (m) => sim.toast(p.id, m);
   if (id === "reload") {
     if (!(inv.gun > 0)) return;
-    const need = MAG - (inv.mag | 0), k = Math.min(need, inv.ammo | 0);
+    const need = magOf(inv) - (inv.mag | 0), k = Math.min(need, inv.ammo | 0);
     if (need <= 0) return toast("Magazine already full.");
     if (k <= 0) return toast("No spare rounds \u2014 buy more from Carla in Harlow.");
     inv.ammo -= k;
     inv.mag = (inv.mag | 0) + k;
     sim.emit("reload", p.x, p.z, p.id, 0);
-    return toast(`Reloaded (${inv.mag}/${MAG}, ${inv.ammo} spare).`);
+    return toast(`Reloaded (${inv.mag}/${magOf(inv)}, ${inv.ammo} spare).`);
   }
   if (id === "armor" && inv.armor > 0) {
     inv.armorOn = inv.armorOn ? 0 : 1;
@@ -4073,14 +4104,14 @@ function talk(sim, p, n, a) {
       break;
     case "sell1":
     case "sell2": {
-      const k = a === "sell2" ? 2 : 1, pr = Math.round(price(S2, BAG_P) * k * (repOf(tw).h >= 70 ? 1.1 : 1));
+      const k = a === "sell2" ? 2 : 1, pr = Math.round(price(S2, BAG_P) * k * (repOf(tw).h >= 700 ? 1.1 : 1));
       repAdd(sim, p, "h", 5 + Math.round(Math.random() * 5));
       inv.bag -= k;
       tw.cash += pr;
       tw.sales += k;
       tw.fac += 1;
       tw.vis = tw.vis.filter((v) => v.i !== n);
-      tw.want[n] = S2.time + CFG.DAY_LEN * (0.6 + Math.random() * 0.8);
+      tw.want[n] = (day(S2) + k - 1) * CFG.DAY_LEN + CFG.DAY_LEN * (0.2 + Math.random() * 0.4);
       say(`"Thanks, friend." (+$${pr})`);
       break;
     }
@@ -4211,6 +4242,7 @@ function shoot(sim, p, gun = false) {
     p.inv.mag--;
     p.atkCd = 0.38;
     p.loud = (S2.time || 0) + 5;
+    p.loudR = p.inv.msup | 0 ? 25 : 60;
   } else {
     if (!(p.inv.bow > 0)) return false;
     if (p.inv.arrow < 1) {
@@ -4322,7 +4354,7 @@ function potUse(sim, p, s) {
     }
     return toast(potText(S2, g));
   }
-  const buds = 2 + (g.f === 2 ? 2 : 0) + (Math.random() < 0.4 ? 1 : 0), seeds = 1 + (Math.random() < seedChance(p, tw) ? 1 : 0);
+  const buds = 7 + (g.f === 2 ? 2 : 0) + (Math.random() < 0.4 ? 1 : 0), seeds = 1 + (Math.random() < seedChance(p, tw) ? 1 : 0);
   p.inv.bud += buds;
   p.inv.seeds += seeds;
   g.s = 0;
@@ -4778,7 +4810,7 @@ var Sim = class {
     p.hp = full ? mh : rs2 && rs2.t === "bed" ? mh : mh * 0.6;
     p.hu = full ? 80 : 60;
     p.st = maxSt(p);
-    const keep = full ? {} : { bow: p.inv.bow | 0, shovel: p.inv.shovel | 0, seeds: p.inv.seeds | 0, arrow: p.inv.arrow | 0, gun: p.inv.gun | 0, mag: p.inv.mag | 0, ammo: p.inv.ammo | 0, armor: p.inv.armor | 0, helm: p.inv.helm | 0, armorOn: p.inv.armorOn | 0, helmOn: p.inv.helmOn | 0, vial: p.inv.vial | 0 };
+    const keep = full ? {} : { bow: p.inv.bow | 0, shovel: p.inv.shovel | 0, seeds: p.inv.seeds | 0, arrow: p.inv.arrow | 0, gun: p.inv.gun | 0, msup: p.inv.msup | 0, mext: p.inv.mext | 0, mag: p.inv.mag | 0, ammo: p.inv.ammo | 0, armor: p.inv.armor | 0, helm: p.inv.helm | 0, armorOn: p.inv.armorOn | 0, helmOn: p.inv.helmOn | 0, vial: p.inv.vial | 0 };
     p.inv = Object.fromEntries(ITEMS.map((k) => [k, keep[k] || (full && k === "food" ? 1 : 0)]));
   }
   // ------------------------------------------------------------------ XP / levels
@@ -5500,7 +5532,7 @@ var Sim = class {
     if (p.sp && p.mv > 0.1) r *= 1.25;
     if (p.cr) r *= 0.5;
     if (inFort(p.x, p.z)) r *= 0.3;
-    if (p.loud > S2.time) r = Math.max(r, 60);
+    if (p.loud > S2.time) r = Math.max(r, p.loudR || 60);
     return r;
   }
   /** v7.3 set-piece zombies (overrun camp). */
@@ -5657,7 +5689,7 @@ var Sim = class {
       }
       if (tp) {
         const pd = Math.hypot(tp.x - z.x, tp.z - z.z);
-        if (pd < (z.gb ? 2.6 : 1.45) && z.atkCd <= 0 && inFort(tp.x, tp.z) === inFort(z.x, z.z) && !meleeBlocked(W, S2, z.x, z.z, tp.x, tp.z)) {
+        if (pd < (z.gb ? 2.6 : 1.45) && z.atkCd <= 0 && (tp.y || 0) < (z.y || 0) + (z.gb ? 3.2 : 1.9) && inFort(tp.x, tp.z) === inFort(z.x, z.z) && !meleeBlocked(W, S2, z.x, z.z, tp.x, tp.z)) {
           z.atkCd = z.gb ? 1.8 : 1.1;
           z.atk = 0.4;
           this.emit("zatk", z.x, z.z, z.id, tp.id);
@@ -11773,10 +11805,8 @@ function buildOpenWorld(M, W, T2, parent, scene) {
         l.castShadow = SH;
         sp.add(l);
       }
-      box(3.3, 0.2, 3.3, 5916210, t.x, 4.6, t.z);
-      box(3.3, 0.9, 0.12, 5916210, t.x, 5.1, t.z + 1.6);
-      box(3.3, 0.9, 0.12, 5916210, t.x, 5.1, t.z - 1.6);
     }
+    for (const q of ELEV) if (q[6] && q[0] < 100) box(q[1] - q[0], q[4] - q[5], q[3] - q[2], q[6], (q[0] + q[1]) / 2, (q[4] + q[5]) / 2, (q[2] + q[3]) / 2);
     place("car_van", H.x1 + 5, H.z1 - 4, 0, "l", 4.8) || box(2.2, 2, 4.6, 3816006, H.x1 + 5, 1, H.z1 - 4);
     place("sv_workbench", 20, -822.5, 0, "l", 1.6);
     place("road_road_sign_warning", H.x1 + 3, H.gz0 - 2, -Math.PI / 2, "h", 2.4);
@@ -11818,6 +11848,7 @@ function buildOpenWorld(M, W, T2, parent, scene) {
     place("fur_lampRoundFloor", 157, -1029.5, 0, "h", 1.6);
     place("fur_chair", 163.4, -1024.9, 0.5, "h", 0.9);
     place("fur_chair", 164.6, -1023.1, Math.PI - 0.4, "h", 0.9);
+    for (const q of ELEV) if (q[6] && q[0] >= 100) box(q[1] - q[0], q[4] - q[5], q[3] - q[2], q[6], (q[0] + q[1]) / 2, (q[4] + q[5]) / 2, (q[2] + q[3]) / 2);
     for (const q of LAB_PROPS) {
       const m = q[0] && place(q[0], q[1], q[2], q[3], q[4], q[5], q[11] || 0);
       if (!m && q[9]) {
@@ -19034,6 +19065,7 @@ var Input = class {
         if (e.code === "KeyX") this.pressed.add("dem");
         if (e.code === "KeyT") this.pressed.add("tier");
         if (e.code === "KeyJ") this.pressed.add("journal");
+        if (e.code === "KeyI") this.pressed.add("inv");
         if (e.code === "KeyN") this.pressed.add("wp");
         if (e.code === "KeyQ") {
           const t = $2("toasts");
@@ -19324,12 +19356,23 @@ var HUD = class {
     this.set("xpT", e.xpT, lvT);
     e.xp.style.width = (me.lv >= MAX_LV ? 100 : me.xp / xpNeed(me.lv) * 100) + "%";
     e.xp.parentElement.style.boxShadow = me.pts ? "0 0 8px 1px #7fd0ff" : "";
-    const shown = ITEMS.filter((k, i) => !["budh", "mag", "armorOn", "helmOn", "gun", "armor", "helm"].includes(k) && (i < 6 || me.inv[k] > 0)), cash = S2.tw && (S2.tw.entry || S2.tw.cash) ? S2.tw.cash : null;
+    const shown = [], cash = S2.tw && (S2.tw.entry || S2.tw.cash) ? S2.tw.cash : null;
     const inv = shown.map((k) => `${k}:${me.inv[k]}`).join("|") + "|$" + cash + "|g" + [me.inv.armor, me.inv.armorOn, me.inv.helm, me.inv.helmOn].join("");
     const gslot = (own, on, nm, ic, pct) => `<span class="chip gs${on ? " on" : ""}" title="${nm}: ${on ? `worn, -${pct}% damage` : own ? "owned, not worn (K to put on)" : "empty slot \u2014 buy from Carla in Harlow"}" style="${on ? "outline:1px solid #7fd07f" : "opacity:" + (own ? 0.8 : 0.4)}"><span style="font-size:15px">${ic}</span><span class="cn">${nm}</span><b>${on ? "on" : own ? "off" : "\u2014"}</b></span>`;
     if (this.last.inv !== inv) {
       this.last.inv = inv;
-      e.inv.innerHTML = shown.map((k) => `<span class="chip" title="${NICE[k] || k}">${ICONS[k] || ICON2(k)}<span class="cn">${NICE[k] || k}</span><b>${me.inv[k]}</b></span>`).join("") + (cash != null ? `<span class="chip" title="cash (shared)">${ICON2("cash")}<span class="cn">cash</span><b>$${cash}</b></span>` : "") + gslot(me.inv.armor > 0, me.inv.armorOn > 0, "Armor", "\u{1F9BA}", 35) + gslot(me.inv.helm > 0, me.inv.helmOn > 0, "Helmet", "\u26D1", 15);
+      if (!e.inv.__pk) {
+        e.inv.__pk = 1;
+        e.inv.style.pointerEvents = "auto";
+        e.inv.addEventListener("pointerdown", (ev) => {
+          if (ev.target.closest && ev.target.closest("[data-pack]") && window.__game) {
+            ev.stopPropagation();
+            window.__game.box = null;
+            window.__game.openMenu("inv");
+          }
+        });
+      }
+      e.inv.innerHTML = shown.map((k) => `<span class="chip" title="${NICE[k] || k}">${ICONS[k] || ICON2(k)}<span class="cn">${NICE[k] || k}</span><b>${me.inv[k]}</b></span>`).join("") + (cash != null ? `<span class="chip" title="cash (shared)">${ICON2("cash")}<span class="cn">cash</span><b>$${cash}</b></span>` : "") + gslot(me.inv.armor > 0, me.inv.armorOn > 0, "Armor", "\u{1F9BA}", 35) + gslot(me.inv.helm > 0, me.inv.helmOn > 0, "Helmet", "\u26D1", 15) + `<span class="chip" data-pack="1" title="Open the inventory" style="opacity:.75"><span style="font-size:14px">\u{1F392}</span><span class="cn">${this.isTouch ? "Pack" : "I: Pack"}</span><b></b></span>`;
     }
     const t = todOf(S2.time), nightNo = S2.night ? S2.nights + 1 : null;
     this.set("clock", e.clock, `Day ${dayOf(S2.time)} \xB7 ${clockStr(t)} \xB7 ${S2.night ? "night" : "daytime"}`);
@@ -21022,6 +21065,49 @@ function applySave(sim, me, d, snapPlace2) {
 }
 
 // ../game/src/main.js
+var INV_N = 27;
+var INV_DEF = {
+  wood: { n: "Wood", e: "\u{1FAB5}", st: 50 },
+  scrap: { n: "Scrap", e: "\u2699\uFE0F", st: 50 },
+  cloth: { n: "Cloth", e: "\u{1F9F5}", st: 20 },
+  food: { n: "Canned food", e: "\u{1F96B}", st: 10, hk: "food" },
+  meat: { n: "Raw meat", e: "\u{1F969}", st: 10, hk: "meat" },
+  cooked: { n: "Cooked meat", e: "\u{1F356}", st: 10, hk: "cooked" },
+  seeds: { n: "Seeds", e: "\u{1F331}", st: 20 },
+  bud: { n: "Bud", e: "\u{1F33F}", st: 20 },
+  budh: { n: "Half bud", e: "\u{1F343}", st: 1 },
+  bag: { n: "Baggie", e: "\u{1F6CD}\uFE0F", st: 20 },
+  pot: { n: "Grow pot", e: "\u{1FAB4}", st: 1 },
+  soil: { n: "Soil sack", e: "\u{1F7EB}", st: 5 },
+  dirt: { n: "Dirt", e: "\u26F0\uFE0F", st: 50 },
+  gsoil: { n: "Good soil", e: "\u{1F7E4}", st: 5 },
+  arrow: { n: "Arrows", e: "\u27B6", st: 30 },
+  bow: { n: "Bow", e: "\u{1F3F9}", st: 1, hk: "bow" },
+  shovel: { n: "Shovel", e: "\u{1FA8F}", st: 1, hk: "shovel" },
+  gun: { n: "Handgun", e: "\u{1F52B}", st: 1, hk: "gun" },
+  ammo: { n: "9mm rounds", e: "\u2022", st: 30 },
+  armor: { n: "Body armor", e: "\u{1F9BA}", st: 1 },
+  helm: { n: "Helmet", e: "\u26D1\uFE0F", st: 1 },
+  vial: { n: "Vial", e: "\u{1F9EA}", st: 1 },
+  msup: { n: "Suppressor (mod)", e: "\u{1F507}", st: 1 },
+  mext: { n: "Ext. magazine (mod)", e: "\u{1F4CE}", st: 1 },
+  bike: { n: "Bicycle", e: "\u{1F6B2}", st: 1 }
+};
+function invSlots(inv) {
+  const out = [];
+  for (const q of Object.keys(INV_DEF)) {
+    let c = inv[q] | 0;
+    if (q === "armor" && inv.armorOn) c = Math.max(0, c - 1);
+    if (q === "helm" && inv.helmOn) c = Math.max(0, c - 1);
+    const d = INV_DEF[q];
+    while (c > 0) {
+      const t = Math.min(c, d.st);
+      out.push({ ...d, c: t });
+      c -= t;
+    }
+  }
+  return out;
+}
 var $3 = (id) => document.getElementById(id);
 var params = new URLSearchParams(location.search);
 var isTouch = params.get("touch") === "1" || matchMedia("(pointer:coarse)").matches && params.get("touch") !== "0";
@@ -21128,7 +21214,7 @@ var Game = class {
     this.view.onScrape = (x, z) => this.audio.scrape(x, z);
     document.body.classList.toggle("touch", isTouch);
     this.mm = new Minimap($3("mm"), $3("fmc"), isTouch);
-    $3("mmhint").textContent = isTouch ? "tap: rotate \xB7 hold: map" : "M: rotate \xB7 hold M: map";
+    $3("mmhint").textContent = isTouch ? "hold: map" : "hold M / Tab: map";
     this.bm = null;
     this.uiMenu = null;
     this.menuT = 0;
@@ -21733,7 +21819,17 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
             if (tg.k === "note") (this.readNotes = this.readNotes || /* @__PURE__ */ new Set()).add(tg.i);
             if (tg.k === "npc") this.openTalk(tg.i, !!tg.slot);
             else if (tg.k === "tw" && tg.a === "pack" && tg.ok) this.openPack();
-            else this.act("use", { tg: { k: tg.k, i: tg.i, a: tg.a } });
+            else {
+              if (tg.k === "loot" && !this.uiMenu) this.box = { name: tg.text || "Container", before: Object.assign({}, me.inv), t: performance.now() };
+              this.act("use", { tg: { k: tg.k, i: tg.i, a: tg.a } });
+              if (this.box && tg.k === "loot") setTimeout(() => {
+                const b = this.box;
+                if (!b || this.uiMenu) return;
+                const m = this.me;
+                if (m && Object.keys(m.inv).some((q) => (m.inv[q] | 0) > (b.before[q] | 0))) this.openMenu("inv");
+                else this.box = null;
+              }, this.mode === "client" ? 350 : 60);
+            }
           }
         }
         if (pr.has("dem")) {
@@ -21746,6 +21842,10 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
       if (pr.has("heal")) this.act("heal");
       if (pr.has("craft")) this.openMenu("build", "craft");
       if (pr.has("journal")) this.openMenu("journal");
+      if (pr.has("inv")) {
+        this.box = null;
+        this.openMenu("inv");
+      }
       const held = this.hb && this.hb.cur(), atkEdge = this.input.attackHeld && !this.atkWas;
       this.atkWas = this.input.attackHeld;
       if (!this.bm && held && ["food", "band", "meat", "cooked"].includes(held.k)) {
@@ -21929,8 +22029,6 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
     this.pk.open();
   }
   toggleMap() {
-    const r = this.mm.toggleRot();
-    this.hud.toast(r ? "Minimap rotates with you" : "Minimap: north is up");
   }
   // ------------------------------------------------------------------ menus: build + character
   openMenu(kind, tab) {
@@ -22134,6 +22232,28 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
           }, this.mode === "client" ? 300 : 0);
         }
       }]);
+    } else if (k === "inv") {
+      const r = invSlots(me.inv), used = r.length, hb = this.hb;
+      title = "INVENTORY";
+      const cell = (s) => s ? `<div class="ivs${s.hk ? " hk" : ""}" ${s.hk ? `data-hk="${s.hk}"` : ""} title="${s.n}${s.hk ? " \u2014 click: put on hotbar slot " + (hb.sel + 1) : ""}"><span class="ie">${s.e}</span><span class="in">${s.n}</span><b>${s.c > 1 || s.st > 1 ? s.c : ""}</b></div>` : '<div class="ivs em"></div>';
+      let box = "";
+      if (this.box) {
+        const b = this.box, got = Object.keys(me.inv).filter((q) => (me.inv[q] | 0) > (b.before[q] | 0) && INV_DEF[q]).map((q) => ({ ...INV_DEF[q], c: (me.inv[q] | 0) - (b.before[q] | 0) }));
+        box = `<h4>${String(b.name).replace(/<[^>]*>/g, "").toUpperCase()}</h4><div class="ivg box">${got.length ? got.map((g) => `<div class="ivs got"><span class="ie">${g.e}</span><span class="in">${g.n}</span><b>+${g.c}</b></div>`).join("") : '<p style="color:var(--dim)">Empty.</p>'}</div><p style="color:var(--dim);font-size:12px">Taken into your pack.</p>`;
+      }
+      html = `<style>.ivg{display:grid;grid-template-columns:repeat(9,58px);gap:4px;margin:6px 0}.ivs{position:relative;width:58px;height:58px;background:#1c1f22cc;border:1px solid #555;border-radius:6px;text-align:center;font-size:10px;color:#ddd;overflow:hidden}.ivs.hk{cursor:pointer;border-color:#b8902a}.ivs.hk:hover{background:#3a3220}.ivs.em{opacity:.35}.ivs.got{border-color:#7c7}.ivs .ie{display:block;font-size:24px;line-height:30px}.ivs .in{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding:0 2px}.ivs b{position:absolute;right:3px;top:1px;font-size:12px;color:#fff;text-shadow:0 0 3px #000}</style>` + box + `<h4>BACKPACK \u2014 ${Math.min(used, INV_N)}/${INV_N} slots${used > INV_N ? ` <span style="color:#e88">(+${used - INV_N} over \u2014 overflow stacks shown in red; a bigger backpack comes later)</span>` : ""}</h4><div class="ivg">${Array.from({ length: Math.max(INV_N, used) }, (_, i) => cell(r[i])).join("").replace(/(<div class="ivs[^"]*")/g, (m, a, off, str) => m)}</div><p style="color:var(--dim);font-size:12px">Click a gold-bordered item to put it on hotbar slot ${hb.sel + 1} (pick the slot with 1\u20139 first). I / Esc closes. Cash $${(S2.tw && S2.tw.cash) | 0}.</p>`;
+      setTimeout(() => {
+        for (const d of document.querySelectorAll("#twB .ivs.hk")) d.onclick = () => {
+          const kk = d.dataset.hk, j = hb.has(kk), prev = hb.slots[hb.sel];
+          if (j === hb.sel) return;
+          if (j >= 0) hb.slots[j] = prev;
+          hb.slots[hb.sel] = { k: kk };
+          hb.sig = "";
+          this.menuSig = "";
+          this.renderMenu();
+        };
+      }, 0);
+      opts = [];
     } else if (k === "craft") {
       title = "CRAFT";
       const cs = (c) => Object.entries(c).map(([i, v]) => `<span style="color:${me.inv[i] >= v ? "#9fe09f" : "#e08a8a"}">${v} ${i}</span>`).join(" + ") || "free";
@@ -22172,7 +22292,7 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
   renderMenu() {
     const me = this.me;
     if (!me) return;
-    if (["talk", "craft", "journal"].includes(this.uiMenu)) return this.renderTown();
+    if (["talk", "craft", "journal", "inv"].includes(this.uiMenu)) return this.renderTown();
     if (this.uiMenu === "build") {
       const tab = this.bmTab || "build", inv = me.inv;
       const sig = [tab, this.selTier, NAMES.map((k) => inv[k]).join(","), ["pot", "dirt", "gsoil", "seed", "shovel", "bow", "arrow", "cloth", "food", "meat"].map((k) => inv[k]).join(","), me.ax, me.stats.join("")].join("|");
@@ -22295,6 +22415,17 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
           this.startBuild(id);
           return true;
         }
+      } else if (this.uiMenu === "inv") {
+        if (code === "KeyI" || code === "KeyE" || code === "Tab") {
+          this.closeMenu();
+          return true;
+        }
+        const n = code.startsWith("Digit") ? +code.slice(5) : 0, o = this.townOpts && this.townOpts[n - 1];
+        if (o) {
+          o[1]();
+          return true;
+        }
+        return true;
       } else if (["talk", "craft", "journal"].includes(this.uiMenu)) {
         if (code === "KeyJ" && this.uiMenu === "journal" || code === "KeyG" && this.uiMenu === "craft") {
           this.closeMenu();
@@ -22518,6 +22649,11 @@ manifest: ${{ ok: "loaded", missing: "not found (music/manifest.json)", file: "s
 };
 var esc = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
 new Game();
+export {
+  INV_DEF,
+  INV_N,
+  invSlots
+};
 
 </script>
 <script>window.__LL_EMBED={manifest:{"crossfade":6,"day":["track1.m4a","track2.m4a"],"gain":{"track1.m4a":0.85,"track2.m4a":0.85}},files:{}};</script>
